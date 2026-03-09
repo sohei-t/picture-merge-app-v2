@@ -30,6 +30,8 @@ export interface SegmentationResult {
   footY: number;
   originalSize: ImageSize;
   processingTimeMs: number;
+  enhanced: boolean;
+  enhancementScale: number;
 }
 
 // ===== API Response Types =====
@@ -40,6 +42,8 @@ export interface SegmentResponse {
   foot_y: number;
   original_size: ImageSize;
   processing_time_ms: number;
+  enhanced: boolean;
+  enhancement_scale: number;
 }
 
 export interface MergeResponse {
@@ -130,16 +134,16 @@ export interface AppError {
 
 // ===== Output Size Presets =====
 export const OUTPUT_PRESETS: Record<OutputPreset, { width: number; height: number; label: string }> = {
-  square:    { width: 1024, height: 1024, label: "正方形 (1024x1024)" },
-  landscape: { width: 1280, height: 720,  label: "横長 16:9 (1280x720)" },
-  portrait:  { width: 720,  height: 1280, label: "縦長 9:16 (720x1280)" },
-  custom:    { width: 1024, height: 1024, label: "カスタム" },
+  square:    { width: 2048, height: 2048, label: "正方形 (2048x2048)" },
+  landscape: { width: 1920, height: 1080, label: "横長 16:9 (1920x1080)" },
+  portrait:  { width: 1080, height: 1920, label: "縦長 9:16 (1080x1920)" },
+  custom:    { width: 2048, height: 2048, label: "カスタム" },
 };
 
 // ===== Default Settings =====
 export const DEFAULT_MERGE_SETTINGS: MergeSettings = {
   backgroundColor: "#FFFFFF",
-  outputSize: { width: 1024, height: 1024, preset: "square" },
+  outputSize: { width: 2048, height: 2048, preset: "square" },
   person1: { x: 0.3, yOffset: 0, scale: 1.0 },
   person2: { x: 0.7, yOffset: 0, scale: 1.0 },
   shadow: { enabled: true, intensity: 0.5 },

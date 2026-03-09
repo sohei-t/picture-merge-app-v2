@@ -51,8 +51,8 @@ describe("SettingsPanel", () => {
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         outputSize: expect.objectContaining({
-          width: 1280,
-          height: 720,
+          width: 1920,
+          height: 1080,
           preset: "landscape",
         }),
       })
@@ -253,8 +253,8 @@ describe("SettingsPanel", () => {
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         outputSize: expect.objectContaining({
-          width: 720,
-          height: 1280,
+          width: 1080,
+          height: 1920,
           preset: "portrait",
         }),
       })

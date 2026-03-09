@@ -131,8 +131,8 @@ class TestMergeImages:
         base64_img, time_ms, (w, h) = merge_images(seg1, seg2, settings)
         assert base64_img.startswith("data:image/png;base64,")
         assert time_ms >= 0
-        assert w == 1024
-        assert h == 1024
+        assert w == 2048
+        assert h == 2048
 
     def test_preview_mode(self):
         """Preview mode returns 512x512 JPEG."""
@@ -143,8 +143,8 @@ class TestMergeImages:
             seg1, seg2, settings, preview_mode=True
         )
         assert base64_img.startswith("data:image/jpeg;base64,")
-        assert w == 512
-        assert h == 512
+        assert w == 768
+        assert h == 768
 
     def test_custom_size(self):
         """Custom output size is respected."""

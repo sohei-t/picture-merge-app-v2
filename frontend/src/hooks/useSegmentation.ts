@@ -21,6 +21,8 @@ function mapResponse(res: Awaited<ReturnType<typeof segmentImage>>): Segmentatio
     footY: res.foot_y,
     originalSize: res.original_size,
     processingTimeMs: res.processing_time_ms,
+    enhanced: res.enhanced ?? false,
+    enhancementScale: res.enhancement_scale ?? 1,
   };
 }
 

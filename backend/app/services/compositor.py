@@ -158,9 +158,18 @@ def merge_images(
 
     # Step 8: Output
     if preview_mode:
-        canvas = canvas.resize((512, 512), Image.LANCZOS)
-        output_image = image_to_base64(canvas, fmt="JPEG", quality=70)
-        output_size = (512, 512)
+        # Scale down proportionally for preview, max 768px on longest side
+        max_preview = 768
+        pw, ph = canvas.size
+        if max(pw, ph) > max_preview:
+            ratio = max_preview / max(pw, ph)
+            preview_w = int(pw * ratio)
+            preview_h = int(ph * ratio)
+        else:
+            preview_w, preview_h = pw, ph
+        canvas = canvas.resize((preview_w, preview_h), Image.LANCZOS)
+        output_image = image_to_base64(canvas, fmt="JPEG", quality=80)
+        output_size = (preview_w, preview_h)
     else:
         output_image = image_to_base64(canvas, fmt="PNG")
         output_size = (canvas_width, canvas_height)

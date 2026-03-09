@@ -12,6 +12,7 @@ from app.models.schemas import (
     ImageSizeModel,
     SegmentResponse,
 )
+from app.services.enhancer import enhance_image
 from app.services.segmentation import segment_image
 from app.utils.image_utils import (
     MAX_FILE_SIZE,
@@ -85,12 +86,21 @@ async def segment(image: UploadFile = File(...)) -> SegmentResponse | JSONRespon
 
     original_size = pil_image.size  # (width, height)
 
-    # Resize if needed
+    # Resize if needed (cap at 4000px)
     pil_image, was_resized = resize_if_needed(pil_image)
     if was_resized:
         logger.warning(
             f"Image resized from {original_size} to {pil_image.size} (max dimension: 4000px)"
         )
+
+    # Enhance low-resolution images before segmentation
+    pil_image, res_level, scale_factor = enhance_image(pil_image)
+    if res_level != "normal":
+        logger.info(
+            f"Image enhanced: {res_level} resolution, {scale_factor}x upscale → {pil_image.size}"
+        )
+        # Cap again after enhancement
+        pil_image, _ = resize_if_needed(pil_image)
 
     # Run segmentation
     try:
@@ -128,4 +138,6 @@ async def segment(image: UploadFile = File(...)) -> SegmentResponse | JSONRespon
         foot_y=output.foot_y,
         original_size=ImageSizeModel(width=original_size[0], height=original_size[1]),
         processing_time_ms=processing_time_ms,
+        enhanced=res_level != "normal",
+        enhancement_scale=scale_factor,
     )

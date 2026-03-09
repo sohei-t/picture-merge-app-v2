@@ -81,9 +81,14 @@ class TestSegmentEndpointSuccess:
         assert bbox["y"] >= 0
         assert bbox["width"] > 0
         assert bbox["height"] > 0
-        # BBox should fit within original image
-        assert bbox["x"] + bbox["width"] <= orig["width"]
-        assert bbox["y"] + bbox["height"] <= orig["height"]
+        # BBox should fit within processed image
+        # (may be larger than original if enhancement was applied)
+        enhanced = data.get("enhanced", False)
+        scale = data.get("enhancement_scale", 1)
+        effective_w = orig["width"] * scale if enhanced else orig["width"]
+        effective_h = orig["height"] * scale if enhanced else orig["height"]
+        assert bbox["x"] + bbox["width"] <= effective_w
+        assert bbox["y"] + bbox["height"] <= effective_h
 
     def test_foot_y_validity(self, client, sample_jpeg_image):
         """BE-SEG-006: foot_y equals bbox.y + bbox.height."""

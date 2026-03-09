@@ -32,6 +32,8 @@ class SegmentResponse(BaseModel):
     foot_y: int = Field(..., description="Foot Y coordinate (px)")
     original_size: ImageSizeModel
     processing_time_ms: int = Field(..., ge=0, description="Processing time (ms)")
+    enhanced: bool = Field(default=False, description="Whether image was enhanced")
+    enhancement_scale: int = Field(default=1, description="Enhancement scale factor")
 
 
 class PersonSettingsModel(BaseModel):
@@ -64,10 +66,10 @@ class MergeSettingsModel(BaseModel):
         description="Background color (hex)",
     )
     output_width: int = Field(
-        default=1024, ge=64, le=4096, description="Output width (px)"
+        default=2048, ge=64, le=4096, description="Output width (px)"
     )
     output_height: int = Field(
-        default=1024, ge=64, le=4096, description="Output height (px)"
+        default=2048, ge=64, le=4096, description="Output height (px)"
     )
     person1: PersonSettingsModel = Field(
         default_factory=lambda: PersonSettingsModel(x=0.3)

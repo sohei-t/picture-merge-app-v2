@@ -8,6 +8,8 @@ interface UseSegmentationReturn {
   isProcessing: boolean;
   error: AppError | null;
   segmentBoth: (file1: File, file2: File) => Promise<void>;
+  segmentOne: (target: "person1" | "person2", file: File) => Promise<void>;
+  clearPerson: (target: "person1" | "person2") => void;
   reset: () => void;
 }
 
@@ -45,6 +47,32 @@ export function useSegmentation(): UseSegmentationReturn {
     }
   }, []);
 
+  const segmentOne = useCallback(async (target: "person1" | "person2", file: File) => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const res = await segmentImage(file);
+      const result = mapResponse(res);
+      if (target === "person1") {
+        setPerson1(result);
+      } else {
+        setPerson2(result);
+      }
+    } catch (err) {
+      setError(err as AppError);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, []);
+
+  const clearPerson = useCallback((target: "person1" | "person2") => {
+    if (target === "person1") {
+      setPerson1(null);
+    } else {
+      setPerson2(null);
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setPerson1(null);
     setPerson2(null);
@@ -52,5 +80,5 @@ export function useSegmentation(): UseSegmentationReturn {
     setIsProcessing(false);
   }, []);
 
-  return { person1, person2, isProcessing, error, segmentBoth, reset };
+  return { person1, person2, isProcessing, error, segmentBoth, segmentOne, clearPerson, reset };
 }

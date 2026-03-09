@@ -205,6 +205,25 @@ export function SettingsPanel({ settings, onChange, disabled = false }: Settings
           色調補正
         </label>
       </div>
+
+      {/* Layer Order */}
+      <div className="space-y-1">
+        <label className="block text-xs font-medium text-gray-600">レイヤー順序</label>
+        <button
+          onClick={() =>
+            onChange({
+              ...settings,
+              layerOrder: settings.layerOrder === "person1_back" ? "person2_back" : "person1_back",
+            })
+          }
+          className="w-full text-sm border border-gray-300 rounded px-3 py-1.5 bg-white hover:bg-gray-50 transition-colors text-left"
+        >
+          {settings.layerOrder === "person1_back"
+            ? "前面: 人物2 ／ 背面: 人物1"
+            : "前面: 人物1 ／ 背面: 人物2"}
+          <span className="float-right text-gray-400">切替</span>
+        </button>
+      </div>
     </div>
   );
 }

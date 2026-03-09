@@ -7,6 +7,7 @@ interface ImageDropzoneProps {
   file: File | null;
   onDrop: (file: File) => void;
   onError: (message: string) => void;
+  onClear?: () => void;
   disabled?: boolean;
 }
 
@@ -16,7 +17,7 @@ const ACCEPT = {
   "image/webp": [".webp"],
 };
 
-export function ImageDropzone({ label, file, onDrop, onError, disabled = false }: ImageDropzoneProps) {
+export function ImageDropzone({ label, file, onDrop, onError, onClear, disabled = false }: ImageDropzoneProps) {
   const handleDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: readonly { readonly errors: readonly { message: string }[] }[]) => {
       if (rejectedFiles.length > 0) {
@@ -61,11 +62,26 @@ export function ImageDropzone({ label, file, onDrop, onError, disabled = false }
       >
         <input {...getInputProps()} />
         {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt="サムネイル"
-            className="max-h-[140px] max-w-full object-contain rounded"
-          />
+          <div className="relative">
+            <img
+              src={thumbnailUrl}
+              alt="サムネイル"
+              className="max-h-[140px] max-w-full object-contain rounded"
+            />
+            {onClear && !disabled && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClear();
+                }}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 shadow-sm"
+                title="クリア"
+              >
+                x
+              </button>
+            )}
+          </div>
         ) : (
           <div className="text-gray-500">
             {isDragActive ? (

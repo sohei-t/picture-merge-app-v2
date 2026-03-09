@@ -66,6 +66,7 @@ function App() {
         });
       } else {
         setPhase("ONE_UPLOADED");
+        segmentation.segmentOne("person1", file).catch(() => {});
       }
     },
     [file2, segmentation]
@@ -84,10 +85,28 @@ function App() {
         });
       } else {
         setPhase("ONE_UPLOADED");
+        segmentation.segmentOne("person2", file).catch(() => {});
       }
     },
     [file1, segmentation]
   );
+
+  // ===== Per-person clear =====
+  const handleClear1 = useCallback(() => {
+    setFile1(null);
+    segmentation.clearPerson("person1");
+    merge.reset();
+    crop.disableCropMode();
+    setPhase(file2 ? "ONE_UPLOADED" : "IDLE");
+  }, [file2, segmentation, merge, crop]);
+
+  const handleClear2 = useCallback(() => {
+    setFile2(null);
+    segmentation.clearPerson("person2");
+    merge.reset();
+    crop.disableCropMode();
+    setPhase(file1 ? "ONE_UPLOADED" : "IDLE");
+  }, [file1, segmentation, merge, crop]);
 
   const handleFileError = useCallback((message: string) => {
     setAppError({
@@ -200,6 +219,7 @@ function App() {
                 file={file1}
                 onDrop={handleFile1}
                 onError={handleFileError}
+                onClear={handleClear1}
                 disabled={phase === "SEGMENTING" || phase === "MERGING"}
               />
               <ImageDropzone
@@ -207,6 +227,7 @@ function App() {
                 file={file2}
                 onDrop={handleFile2}
                 onError={handleFileError}
+                onClear={handleClear2}
                 disabled={phase === "SEGMENTING" || phase === "MERGING"}
               />
             </div>

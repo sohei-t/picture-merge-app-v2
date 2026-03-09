@@ -80,6 +80,8 @@ export interface OutputSize {
   preset: OutputPreset;
 }
 
+export type LayerOrder = "person1_back" | "person2_back";
+
 export interface MergeSettings {
   backgroundColor: string;
   outputSize: OutputSize;
@@ -87,6 +89,7 @@ export interface MergeSettings {
   person2: PersonSettings;
   shadow: ShadowSettings;
   colorCorrection: boolean;
+  layerOrder: LayerOrder;
 }
 
 // ===== Merge Request (API format) =====
@@ -112,6 +115,7 @@ export interface MergeRequest {
       intensity: number;
     };
     color_correction: boolean;
+    layer_order: string;
   };
   preview_mode: boolean;
 }
@@ -140,4 +144,5 @@ export const DEFAULT_MERGE_SETTINGS: MergeSettings = {
   person2: { x: 0.7, yOffset: 0, scale: 1.0 },
   shadow: { enabled: true, intensity: 0.5 },
   colorCorrection: true,
+  layerOrder: "person1_back",
 };

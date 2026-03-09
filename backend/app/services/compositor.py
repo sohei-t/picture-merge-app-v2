@@ -148,9 +148,13 @@ def merge_images(
         shadow_img = Image.fromarray(combined_shadow, "RGBA")
         canvas = Image.alpha_composite(canvas, shadow_img)
 
-    # Step 7: Composite persons onto canvas
-    canvas = _paste_with_alpha(canvas, person1_scaled, p1_left, p1_top)
-    canvas = _paste_with_alpha(canvas, person2_scaled, p2_left, p2_top)
+    # Step 7: Composite persons onto canvas (layer order determines who is in front)
+    if settings.layer_order == "person2_back":
+        canvas = _paste_with_alpha(canvas, person2_scaled, p2_left, p2_top)
+        canvas = _paste_with_alpha(canvas, person1_scaled, p1_left, p1_top)
+    else:
+        canvas = _paste_with_alpha(canvas, person1_scaled, p1_left, p1_top)
+        canvas = _paste_with_alpha(canvas, person2_scaled, p2_left, p2_top)
 
     # Step 8: Output
     if preview_mode:

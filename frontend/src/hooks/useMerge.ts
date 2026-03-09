@@ -40,6 +40,7 @@ function buildRequest(
         intensity: settings.shadow.intensity,
       },
       color_correction: settings.colorCorrection,
+      layer_order: settings.layerOrder,
     },
     preview_mode: previewMode,
   };

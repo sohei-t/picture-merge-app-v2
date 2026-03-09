@@ -77,6 +77,11 @@ class MergeSettingsModel(BaseModel):
     )
     shadow: ShadowSettingsModel = Field(default_factory=ShadowSettingsModel)
     color_correction: bool = Field(default=True, description="Apply color correction")
+    layer_order: str = Field(
+        default="person1_back",
+        pattern=r"^(person1_back|person2_back)$",
+        description="Layer order: person1_back (person1 behind) or person2_back",
+    )
 
 
 class MergeRequest(BaseModel):

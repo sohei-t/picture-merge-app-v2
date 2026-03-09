@@ -45,6 +45,51 @@ def is_rembg_loaded() -> bool:
     return _rembg_loaded
 
 
+def _clean_edge_colors(rgba_array: np.ndarray) -> np.ndarray:
+    """Clean up semi-transparent edge pixels to remove background color contamination.
+
+    Semi-transparent pixels at the edge of a segmented image often contain
+    a mix of foreground and background colors. This function replaces the
+    RGB values of semi-transparent pixels with the nearest fully-opaque
+    pixel's color, preserving the alpha for smooth blending.
+    """
+    alpha = rgba_array[:, :, 3]
+    rgb = rgba_array[:, :, :3].copy()
+
+    # Identify semi-transparent pixels (10 < alpha < 240)
+    semi_mask = (alpha > 10) & (alpha < 240)
+
+    if not np.any(semi_mask):
+        return rgba_array
+
+    # Create a mask of fully opaque pixels
+    opaque_mask = alpha >= 240
+
+    if not np.any(opaque_mask):
+        return rgba_array
+
+    # Use morphological dilation to expand opaque pixel colors into
+    # semi-transparent regions
+    kernel = np.ones((5, 5), np.uint8)
+
+    for ch in range(3):
+        channel = rgb[:, :, ch].copy()
+        # Only consider opaque pixels as source
+        source = np.where(opaque_mask, channel, 0).astype(np.uint8)
+        # Dilate to spread opaque colors outward
+        dilated = cv2.dilate(source, kernel, iterations=2)
+        # Count mask for proper averaging
+        count_src = opaque_mask.astype(np.uint8)
+        count_dilated = cv2.dilate(count_src, kernel, iterations=2)
+        # Apply dilated colors to semi-transparent pixels
+        valid = semi_mask & (count_dilated > 0)
+        rgb[valid, ch] = dilated[valid]
+
+    result = rgba_array.copy()
+    result[:, :, :3] = rgb
+    return result
+
+
 def segment_image(image: Image.Image, original_size: tuple[int, int]) -> tuple[str, SegmentedOutput]:
     """Run segmentation on an image.
 
@@ -76,18 +121,30 @@ def segment_image(image: Image.Image, original_size: tuple[int, int]) -> tuple[s
         result = result.convert("RGBA")
 
     # Get alpha channel
-    alpha = np.array(result)[:, :, 3]
+    result_array = np.array(result)
+    alpha = result_array[:, :, 3]
 
     # Check if any foreground was detected
     if np.max(alpha) == 0:
         raise ValueError("No foreground detected by rembg: alpha channel is entirely transparent")
 
-    # Alpha matte refinement: Gaussian blur for smooth edges
-    alpha_refined = cv2.GaussianBlur(alpha, (5, 5), 1.5)
+    # Alpha matte refinement:
+    # 1. Slight erosion to remove edge artifacts (removes 1px of edge contamination)
+    kernel_erode = np.ones((3, 3), np.uint8)
+    alpha_eroded = cv2.erode(alpha, kernel_erode, iterations=1)
 
-    # Apply refined alpha back to image
-    result_array = np.array(result)
+    # 2. Gentle blur ONLY on the eroded edge (not expanding outward)
+    alpha_smooth = cv2.GaussianBlur(alpha_eroded, (3, 3), 0.8)
+
+    # 3. Keep original alpha for clearly opaque pixels, use smoothed for edges
+    alpha_refined = np.where(alpha > 240, alpha, alpha_smooth)
+
+    # Apply refined alpha
     result_array[:, :, 3] = alpha_refined
+
+    # Clean up semi-transparent edge colors (remove background contamination)
+    result_array = _clean_edge_colors(result_array)
+
     result = Image.fromarray(result_array, "RGBA")
 
     # Compute bounding box

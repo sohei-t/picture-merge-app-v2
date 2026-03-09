@@ -1,0 +1,81 @@
+project:
+  name: "picture-merge-app-v2"
+  agent_type: "git-worktree-agent"
+  status: "in_progress"
+  started_at: "2026-03-09T17:58:03+09:00"
+  updated_at: "2026-03-09T18:45:00+09:00"
+
+progress:
+  overall_percent: 85
+  current_phase: "phase6-publishing"
+
+phases:
+  - name: "Phase 0: Initialization"
+    status: "completed"
+    steps:
+      - name: "Git worktree creation"
+        done: true
+      - name: "PROJECT_INFO.yaml generation"
+        done: true
+
+  - name: "Phase 1: Planning"
+    status: "completed"
+    steps:
+      - name: "Parallel plan generation"
+        done: true
+      - name: "Autonomous evaluation"
+        done: true
+      - name: "Specification design"
+        done: true
+      - name: "WBS creation"
+        done: true
+      - name: "Test design"
+        done: true
+
+  - name: "Phase 2: Implementation"
+    status: "completed"
+    steps:
+      - name: "Frontend implementation"
+        done: true
+      - name: "Backend implementation"
+        done: true
+      - name: "Database implementation"
+        done: true
+
+  - name: "Phase 3: Testing"
+    status: "completed"
+    steps:
+      - name: "Unit tests pass"
+        done: true
+      - name: "Integration tests pass"
+        done: true
+      - name: "Coverage >= 70%"
+        done: true
+
+  - name: "Phase 4: Quality"
+    status: "completed"
+    steps:
+      - name: "Coverage 80-90%"
+        done: true
+      - name: "Performance optimization"
+        done: true
+
+  - name: "Phase 5: Delivery"
+    status: "completed"
+    steps:
+      - name: "README.md"
+        done: true
+      - name: "about.html"
+        done: true
+      - name: "explanation.mp3"
+        done: true
+
+  - name: "Phase 6: Publishing"
+    status: "pending"
+    steps:
+      - name: "GitHub push"
+        done: false
+      - name: "Security verification"
+        done: false
+
+errors: []

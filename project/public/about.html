@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Picture Merge App v2</title>
+  <style>
+    :root {
+      --color-primary: #2563eb;
+      --color-primary-light: #3b82f6;
+      --color-primary-dark: #1d4ed8;
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-text: #1e293b;
+      --color-text-secondary: #64748b;
+      --color-border: #e2e8f0;
+      --color-accent: #8b5cf6;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --radius: 12px;
+      --max-width: 960px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      color: #fff;
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header .subtitle {
+      font-size: 1.05rem;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    /* Language switcher */
+    .lang-switcher {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      display: flex;
+      gap: 0.25rem;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 0.2rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .lang-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    .lang-btn.active {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    /* Container */
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Card */
+    .card {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--color-border);
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.2s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.3s; }
+    .card:nth-child(7) { animation-delay: 0.35s; }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card h2 .icon {
+      font-size: 1.3rem;
+    }
+
+    .card p {
+      color: var(--color-text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .card p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Feature list */
+    .feature-list {
+      list-style: none;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--color-bg);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .feature-list .feature-id {
+      font-weight: 700;
+      color: var(--color-primary);
+      min-width: 2.25rem;
+      flex-shrink: 0;
+    }
+
+    .feature-list .feature-text {
+      color: var(--color-text);
+    }
+
+    .feature-list .feature-text strong {
+      font-weight: 600;
+    }
+
+    /* Tech grid */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .tech-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tech-group h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .tech-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tech-tag {
+      display: inline-block;
+      padding: 0.3rem 0.7rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    /* Architecture */
+    .arch-flow {
+      background: var(--color-bg);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-item {
+      text-align: center;
+      padding: 1.25rem 1rem;
+      background: var(--color-bg);
+      border-radius: 8px;
+    }
+
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--color-primary);
+      line-height: 1.2;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    /* Phase list */
+    .phase-list {
+      list-style: none;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    .phase-list::before {
+      content: '';
+      position: absolute;
+      left: 0.45rem;
+      top: 0.5rem;
+      bottom: 0.5rem;
+      width: 2px;
+      background: var(--color-border);
+    }
+
+    .phase-list li {
+      position: relative;
+      padding: 0.4rem 0 0.4rem 1rem;
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+    }
+
+    .phase-list li::before {
+      content: '';
+      position: absolute;
+      left: -1.1rem;
+      top: 0.75rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: 2px solid var(--color-surface);
+    }
+
+    .phase-list li strong {
+      color: var(--color-text);
+    }
+
+    /* Audio */
+    .audio-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--color-bg);
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 0.5rem;
+    }
+
+    .audio-label {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--color-border);
+      margin-top: 2rem;
+    }
+
+    .footer a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .header {
+        padding: 2.5rem 1rem 2rem;
+      }
+      .header h1 {
+        font-size: 1.5rem;
+      }
+      .lang-switcher {
+        top: 0.75rem;
+        right: 0.75rem;
+      }
+      .lang-btn {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
+      }
+      .container {
+        padding: 1.25rem 1rem 3rem;
+      }
+      .card {
+        padding: 1.5rem;
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ja" onclick="switchLang('ja')">JP</button>
+      <button class="lang-btn" data-lang="en" onclick="switchLang('en')">EN</button>
+    </div>
+    <h1>Picture Merge App v2</h1>
+    <p class="subtitle" data-ja="AI対応 高品質写真合成Webアプリケーション" data-en="AI-Powered High-Quality Photo Merge Web Application"></p>
+  </header>
+
+  <!-- Content -->
+  <div class="container">
+
+    <!-- Overview -->
+    <section class="card">
+      <h2><span class="icon">&#128247;</span> <span data-ja="概要" data-en="Overview"></span></h2>
+      <p data-ja="2枚の人物写真から人物をAIで高精度に切り抜き、同じ場所に一緒にいるかのように自然に合成するWebアプリケーションです。動画生成AI（Kling, Runway, Pika等）に渡す元画像として、「2人が一緒に写っている1枚の写真」として認識される品質を実現します。"
+         data-en="A web application that uses AI to precisely cut out people from two separate photos and naturally merge them as if they were together in the same place. It produces output quality that video generation AIs (Kling, Runway, Pika, etc.) recognize as a single photo of two people together."></p>
+      <p data-ja="全処理をローカルで完結し、外部APIを使用しない$0運用を実現しています。"
+         data-en="All processing is done locally with no external API calls, achieving $0 operational cost."></p>
+    </section>
+
+    <!-- Features -->
+    <section class="card">
+      <h2><span class="icon">&#9889;</span> <span data-ja="主な機能" data-en="Key Features"></span></h2>
+      <ul class="feature-list">
+        <li>
+          <span class="feature-id">F1</span>
+          <span class="feature-text">
+            <strong data-ja="写真入力（2枚）" data-en="Photo Input (2 images)"></strong><br>
+            <span data-ja="D&D/ファイル選択で2枚の人物写真を入力。JPEG/PNG/WebP/HEIC対応、最大20MB/枚"
+                  data-en="Input two portrait photos via drag & drop or file picker. Supports JPEG/PNG/WebP/HEIC, up to 20MB each"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F2</span>
+          <span class="feature-text">
+            <strong data-ja="AI人物セグメンテーション" data-en="AI Person Segmentation"></strong><br>
+            <span data-ja="rembg（U2Net）による自動背景除去。アルファマット処理で髪の毛のエッジも自然に処理"
+                  data-en="Automatic background removal via rembg (U2Net). Alpha matting ensures natural edges even for hair"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F3</span>
+          <span class="feature-text">
+            <strong data-ja="合成設定パネル" data-en="Merge Settings Panel"></strong><br>
+            <span data-ja="背景色、出力サイズ、位置、スケール、影、色調補正のパラメータをインタラクティブに調整"
+                  data-en="Interactively adjust background color, output size, position, scale, shadow, and color correction parameters"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F4</span>
+          <span class="feature-text">
+            <strong data-ja="自動スケール調整" data-en="Auto Scale Adjustment"></strong><br>
+            <span data-ja="バウンディングボックス高さ比較によるインテリジェントスケール自動調整（0.8-1.2倍）"
+                  data-en="Intelligent auto-scaling based on bounding box height comparison (0.8x-1.2x range)"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F5</span>
+          <span class="feature-text">
+            <strong data-ja="リアルタイムプレビュー" data-en="Real-time Preview"></strong><br>
+            <span data-ja="パラメータ変更時に低解像度プレビューを即座に取得。Canvas上で人物をドラッグして位置調整可能"
+                  data-en="Instantly fetch low-resolution preview on parameter change. Drag people on Canvas for position adjustment"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F6</span>
+          <span class="feature-text">
+            <strong data-ja="高品質出力" data-en="High-Quality Output"></strong><br>
+            <span data-ja="フル解像度PNG出力。1024x1024（正方形）、1280x720（16:9）、720x1280（9:16）等のプリセット対応"
+                  data-en="Full-resolution PNG output. Presets for 1024x1024 (square), 1280x720 (16:9), 720x1280 (9:16), and more"></span>
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="card">
+      <h2><span class="icon">&#128736;</span> <span data-ja="技術スタック" data-en="Tech Stack"></span></h2>
+      <div class="tech-grid">
+        <div class="tech-group">
+          <h3>Frontend</h3>
+          <div class="tech-tags">
+            <span class="tech-tag">React 18</span>
+            <span class="tech-tag">TypeScript</span>
+            <span class="tech-tag">Vite 5</span>
+            <span class="tech-tag">Tailwind CSS 3</span>
+            <span class="tech-tag">react-dropzone</span>
+            <span class="tech-tag">Canvas API</span>
+          </div>
+        </div>
+        <div class="tech-group">
+          <h3>Backend</h3>
+          <div class="tech-tags">
+            <span class="tech-tag">Python 3.11+</span>
+            <span class="tech-tag">FastAPI</span>
+            <span class="tech-tag">rembg (U2Net)</span>
+            <span class="tech-tag">Pillow</span>
+            <span class="tech-tag">OpenCV</span>
+            <span class="tech-tag">uvicorn</span>
+          </div>
+        </div>
+        <div class="tech-group">
+          <h3 data-ja="テスト" data-en="Testing"></h3>
+          <div class="tech-tags">
+            <span class="tech-tag">Vitest</span>
+            <span class="tech-tag">React Testing Library</span>
+            <span class="tech-tag">pytest</span>
+            <span class="tech-tag">httpx</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="card">
+      <h2><span class="icon">&#127959;</span> <span data-ja="アーキテクチャ" data-en="Architecture"></span></h2>
+      <p data-ja="フロントエンド（React）とバックエンド（FastAPI）の2プロセス構成。REST APIのみで通信し、画像処理はバックエンドに集約しています。"
+         data-en="Two-process architecture with frontend (React) and backend (FastAPI). Communication via REST API only, with all image processing centralized in the backend."></p>
+      <div class="arch-flow" data-ja="Browser (React 18 + TypeScript)
+  |
+  |-- POST /api/segment --> rembg (U2Net) セグメンテーション
+  |-- POST /api/merge   --> 合成パイプライン
+  |     色調補正 -> スケール計算 -> 影生成 -> 合成 -> 出力
+  |-- GET /api/health   --> ヘルスチェック
+  |
+FastAPI Server (uvicorn :8000)
+  |-- Segmentation Store (LRU 10件キャッシュ)
+  |-- Merge Pipeline (Pillow + OpenCV)" data-en="Browser (React 18 + TypeScript)
+  |
+  |-- POST /api/segment --> rembg (U2Net) Segmentation
+  |-- POST /api/merge   --> Merge Pipeline
+  |     Color Correction -> Scale Calc -> Shadow Gen -> Compose -> Output
+  |-- GET /api/health   --> Health Check
+  |
+FastAPI Server (uvicorn :8000)
+  |-- Segmentation Store (LRU cache, 10 entries)
+  |-- Merge Pipeline (Pillow + OpenCV)"></div>
+    </section>
+
+    <!-- Development Process -->
+    <section class="card">
+      <h2><span class="icon">&#128640;</span> <span data-ja="開発プロセス" data-en="Development Process"></span></h2>
+      <p data-ja="AI駆動の自動ワークフローにより、計画から公開まで一気通貫で開発しました。"
+         data-en="Developed end-to-end from planning to deployment using an AI-driven automated workflow."></p>
+      <ul class="phase-list">
+        <li><strong>Phase 0</strong> <span data-ja="— 初期化・Worktree作成" data-en="— Initialization & Worktree Setup"></span></li>
+        <li><strong>Phase 1</strong> <span data-ja="— 並列計画生成・自律評価・仕様設計" data-en="— Parallel Planning, Autonomous Evaluation & Specification"></span></li>
+        <li><strong>Phase 2</strong> <span data-ja="— Frontend / Backend / DB 並列実装" data-en="— Parallel Frontend / Backend / DB Implementation"></span></li>
+        <li><strong>Phase 3</strong> <span data-ja="— テスト合格（全テスト100%合格）" data-en="— Testing (100% test pass rate)"></span></li>
+        <li><strong>Phase 4</strong> <span data-ja="— 品質改善・カバレッジ向上" data-en="— Quality Improvement & Coverage Enhancement"></span></li>
+        <li><strong>Phase 5</strong> <span data-ja="— ドキュメント生成・完成処理" data-en="— Documentation & Finalization"></span></li>
+        <li><strong>Phase 6</strong> <span data-ja="— GitHubポートフォリオ公開" data-en="— GitHub Portfolio Publishing"></span></li>
+      </ul>
+    </section>
+
+    <!-- Metrics -->
+    <section class="card">
+      <h2><span class="icon">&#128202;</span> <span data-ja="メトリクス" data-en="Metrics"></span></h2>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-value">91%</div>
+          <div class="metric-label" data-ja="Backend カバレッジ" data-en="Backend Coverage"></div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">96%</div>
+          <div class="metric-label" data-ja="Frontend カバレッジ" data-en="Frontend Coverage"></div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">183</div>
+          <div class="metric-label" data-ja="テスト合格数" data-en="Tests Passed"></div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">3</div>
+          <div class="metric-label" data-ja="REST API エンドポイント" data-en="REST API Endpoints"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audio -->
+    <section class="card" id="audio-card" style="display:none;">
+      <h2><span class="icon">&#128266;</span> <span data-ja="音声解説" data-en="Audio Explanation"></span></h2>
+      <div class="audio-section">
+        <p class="audio-label" data-ja="プロジェクトの音声解説を聞く" data-en="Listen to the project audio explanation"></p>
+        <audio controls preload="metadata">
+          <source src="./explanation.mp3" type="audio/mpeg">
+        </audio>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2026 Picture Merge App v2. Generated with <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">Claude Code</a></p>
+  </footer>
+
+  <script>
+    // Language switching
+    function switchLang(lang) {
+      localStorage.setItem('about-lang', lang);
+      applyLang(lang);
+    }
+
+    function applyLang(lang) {
+      // Update buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      // Update all elements with data-ja / data-en
+      document.querySelectorAll('[data-ja][data-en]').forEach(el => {
+        const text = el.getAttribute('data-' + lang);
+        if (text !== null) {
+          if (el.tagName === 'DIV' && el.classList.contains('arch-flow')) {
+            el.textContent = text;
+          } else {
+            el.textContent = text;
+          }
+        }
+      });
+
+      // Update html lang
+      document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
+    }
+
+    // Audio check
+    function checkAudio() {
+      const audio = document.querySelector('#audio-card audio source');
+      if (audio) {
+        const testAudio = new Audio();
+        testAudio.addEventListener('canplaythrough', () => {
+          document.getElementById('audio-card').style.display = '';
+        });
+        testAudio.addEventListener('error', () => {
+          // Keep hidden if file not found
+        });
+        testAudio.src = audio.src;
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('about-lang') || 'ja';
+      applyLang(savedLang);
+      checkAudio();
+    });
+  </script>
+</body>
+</html>

@@ -1,4 +1,33 @@
 project:
-  name: "Space Invaders Game"
-  type: "game"
-  description: "8-bit style retro space shooter game"
+  name: picture-merge-app-v2
+  slug: picture-merge-app-v2
+  type: portfolio
+  created: 2026-03-09 17:58:03
+  last_updated: 2026-03-09 17:58:03
+  status: development
+  version: 1.0.0
+
+portfolio:
+  github_repo: ai-agent-portfolio
+  visibility: public
+  demo_url: "https://github.com/[username]/ai-agent-portfolio/picture-merge-app-v2"
+
+paths:
+  agent_dir: /Users/sohei/Desktop/AI-Apps/picture-merge-app-v2-agent
+  release_dir: ~/Desktop/my-apps/picture-merge-app-v2
+  portfolio_dir: ~/Desktop/GitHub/ai-agent-portfolio/picture-merge-app-v2
+
+workflow:
+  1_develop: "このディレクトリ内で開発"
+  2_test: "worktrees内でテスト実行"
+  3_release: "./release.sh を実行"
+  4_publish: "./publish_to_portfolio.sh を実行"
+  5_modify: "このディレクトリに戻って修正"
+
+features:
+  - "21体のエージェント（基本11体 + ゲーム8体 + 特殊2体）"
+  - "Phase 0-6 完全自動実行"
+  - "モバイル傾きセンサー対応"
+  - "AI画像生成（Google Imagen API）"
+  - "frontend-design スキル統合"
+  - "Gemini TTS音声生成（GCPフォールバック）"

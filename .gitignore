@@ -54,3 +54,9 @@ _workflow/credentials/*.json
 
 # Environment variables (contains API keys)
 _workflow/.env
+__pycache__/
+*.pyc
+.venv/
+.coverage
+coverage/
+backend/coverage/

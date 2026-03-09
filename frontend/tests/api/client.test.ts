@@ -43,7 +43,7 @@ describe("API Client", () => {
       });
     });
 
-    it("throws AppError on API error response", async () => {
+    it("throws AppError on API error response (invalid_image)", async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
@@ -74,9 +74,62 @@ describe("API Client", () => {
         retryable: true,
       });
     });
+
+    it("handles file_too_large error", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 413,
+        json: () =>
+          Promise.resolve({
+            error: "file_too_large",
+            message: "File too large",
+            detail: "Max 20MB",
+          }),
+      });
+
+      const file = new File(["dummy"], "test.jpg", { type: "image/jpeg" });
+      await expect(segmentImage(file)).rejects.toMatchObject({
+        type: "validation",
+        retryable: false,
+      });
+    });
+
+    it("handles segmentation_failed error", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: () =>
+          Promise.resolve({
+            error: "segmentation_failed",
+            message: "Could not segment",
+            detail: "No person detected",
+          }),
+      });
+
+      const file = new File(["dummy"], "test.jpg", { type: "image/jpeg" });
+      await expect(segmentImage(file)).rejects.toMatchObject({
+        type: "segmentation",
+        retryable: false,
+      });
+    });
   });
 
   describe("mergeImages", () => {
+    const baseRequest = {
+      image1_id: "id-1",
+      image2_id: "id-2",
+      settings: {
+        background_color: "#FFFFFF",
+        output_width: 1024,
+        output_height: 1024,
+        person1: { x: 0.3, y_offset: 0, scale: 1.0 },
+        person2: { x: 0.7, y_offset: 0, scale: 1.0 },
+        shadow: { enabled: true, intensity: 0.5 },
+        color_correction: true,
+      },
+      preview_mode: true,
+    };
+
     it("sends JSON request body", async () => {
       const mockResponse = {
         merged_image: "data:image/png;base64,merged",
@@ -89,27 +142,12 @@ describe("API Client", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const request = {
-        image1_id: "id-1",
-        image2_id: "id-2",
-        settings: {
-          background_color: "#FFFFFF",
-          output_width: 1024,
-          output_height: 1024,
-          person1: { x: 0.3, y_offset: 0, scale: 1.0 },
-          person2: { x: 0.7, y_offset: 0, scale: 1.0 },
-          shadow: { enabled: true, intensity: 0.5 },
-          color_correction: true,
-        },
-        preview_mode: true,
-      };
-
-      const result = await mergeImages(request);
+      const result = await mergeImages(baseRequest);
 
       expect(fetch).toHaveBeenCalledWith("/api/merge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
+        body: JSON.stringify(baseRequest),
       });
       expect(result.merged_image).toBe("data:image/png;base64,merged");
     });
@@ -117,23 +155,91 @@ describe("API Client", () => {
     it("throws AppError on network failure", async () => {
       globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
-      await expect(
-        mergeImages({
-          image1_id: "1",
-          image2_id: "2",
-          settings: {
-            background_color: "#FFF",
-            output_width: 100,
-            output_height: 100,
-            person1: { x: 0.3, y_offset: 0, scale: 1 },
-            person2: { x: 0.7, y_offset: 0, scale: 1 },
-            shadow: { enabled: false, intensity: 0 },
-            color_correction: false,
-          },
-          preview_mode: false,
-        })
-      ).rejects.toMatchObject({
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
         type: "network",
+        retryable: true,
+      });
+    });
+
+    it("handles invalid_segment_id error", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () =>
+          Promise.resolve({
+            error: "invalid_segment_id",
+            message: "Segment not found",
+            detail: "id-1 not found",
+          }),
+      });
+
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
+        type: "merge",
+        retryable: true,
+      });
+    });
+
+    it("handles merge_failed error with status < 500 (not retryable)", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: () =>
+          Promise.resolve({
+            error: "merge_failed",
+            message: "Merge failed",
+          }),
+      });
+
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
+        type: "unknown",
+        retryable: false,
+      });
+    });
+
+    it("handles internal_error with status >= 500 (retryable)", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () =>
+          Promise.resolve({
+            error: "internal_error",
+            message: "Internal error",
+          }),
+      });
+
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
+        type: "unknown",
+        retryable: true,
+      });
+    });
+
+    it("handles unknown error codes with default message", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 418,
+        json: () =>
+          Promise.resolve({
+            error: "some_unknown_error",
+            message: "",
+          }),
+      });
+
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
+        type: "unknown",
+        message: "不明なエラーが発生しました。",
+        retryable: true,
+      });
+    });
+
+    it("handles non-JSON error response for merge", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error("bad gateway")),
+      });
+
+      await expect(mergeImages(baseRequest)).rejects.toMatchObject({
+        type: "unknown",
         retryable: true,
       });
     });
@@ -162,6 +268,23 @@ describe("API Client", () => {
 
       await expect(healthCheck()).rejects.toMatchObject({
         type: "network",
+      });
+    });
+
+    it("throws on API error response for health", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        json: () =>
+          Promise.resolve({
+            error: "internal_error",
+            message: "Service unavailable",
+          }),
+      });
+
+      await expect(healthCheck()).rejects.toMatchObject({
+        type: "unknown",
+        retryable: true,
       });
     });
   });

@@ -6,6 +6,8 @@ interface DragState {
   dragTarget: "person1" | "person2" | null;
   dragStartX: number;
   dragCurrentX: number;
+  dragStartY: number;
+  dragCurrentY: number;
 }
 
 interface UseCanvasDragProps {
@@ -13,9 +15,12 @@ interface UseCanvasDragProps {
   person2Bbox: BoundingBox | null;
   canvasWidth: number;
   outputWidth: number;
+  outputHeight: number;
   person1X: number;
   person2X: number;
-  onDragEnd: (target: "person1" | "person2", newX: number) => void;
+  person1YOffset: number;
+  person2YOffset: number;
+  onDragEnd: (target: "person1" | "person2", newX: number, newYOffset: number) => void;
 }
 
 interface UseCanvasDragReturn {
@@ -30,8 +35,11 @@ export function useCanvasDrag({
   person2Bbox,
   canvasWidth,
   outputWidth,
+  outputHeight,
   person1X,
   person2X,
+  person1YOffset,
+  person2YOffset,
   onDragEnd,
 }: UseCanvasDragProps): UseCanvasDragReturn {
   const [dragState, setDragState] = useState<DragState>({
@@ -39,17 +47,22 @@ export function useCanvasDrag({
     dragTarget: null,
     dragStartX: 0,
     dragCurrentX: 0,
+    dragStartY: 0,
+    dragCurrentY: 0,
   });
 
   const canvasRef = useRef<DOMRect | null>(null);
 
-  const getCanvasX = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>): number => {
+  const getCanvasPos = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
       const rect = e.currentTarget.getBoundingClientRect();
       canvasRef.current = rect;
-      return ((e.clientX - rect.left) / rect.width) * outputWidth;
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * outputWidth,
+        y: ((e.clientY - rect.top) / rect.height) * outputHeight,
+      };
     },
-    [outputWidth]
+    [outputWidth, outputHeight]
   );
 
   const hitTest = useCallback(
@@ -76,45 +89,52 @@ export function useCanvasDrag({
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvasX = getCanvasX(e);
-      const target = hitTest(canvasX);
+      const pos = getCanvasPos(e);
+      const target = hitTest(pos.x);
       if (target) {
         setDragState({
           isDragging: true,
           dragTarget: target,
-          dragStartX: canvasX,
-          dragCurrentX: canvasX,
+          dragStartX: pos.x,
+          dragCurrentX: pos.x,
+          dragStartY: pos.y,
+          dragCurrentY: pos.y,
         });
       }
     },
-    [getCanvasX, hitTest]
+    [getCanvasPos, hitTest]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!dragState.isDragging) return;
-      const canvasX = getCanvasX(e);
-      setDragState((prev) => ({ ...prev, dragCurrentX: canvasX }));
+      const pos = getCanvasPos(e);
+      setDragState((prev) => ({ ...prev, dragCurrentX: pos.x, dragCurrentY: pos.y }));
     },
-    [dragState.isDragging, getCanvasX]
+    [dragState.isDragging, getCanvasPos]
   );
 
   const handleMouseUp = useCallback(() => {
     if (!dragState.isDragging || !dragState.dragTarget) return;
 
     const deltaX = dragState.dragCurrentX - dragState.dragStartX;
+    const deltaY = dragState.dragCurrentY - dragState.dragStartY;
     const currentX = dragState.dragTarget === "person1" ? person1X : person2X;
+    const currentYOffset = dragState.dragTarget === "person1" ? person1YOffset : person2YOffset;
     const newX = Math.max(0, Math.min(1, currentX + deltaX / outputWidth));
+    const newYOffset = Math.max(-500, Math.min(500, currentYOffset + deltaY));
 
-    onDragEnd(dragState.dragTarget, newX);
+    onDragEnd(dragState.dragTarget, newX, newYOffset);
 
     setDragState({
       isDragging: false,
       dragTarget: null,
       dragStartX: 0,
       dragCurrentX: 0,
+      dragStartY: 0,
+      dragCurrentY: 0,
     });
-  }, [dragState, person1X, person2X, outputWidth, onDragEnd]);
+  }, [dragState, person1X, person2X, person1YOffset, person2YOffset, outputWidth, onDragEnd]);
 
   return { dragState, handleMouseDown, handleMouseMove, handleMouseUp };
 }

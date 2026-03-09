@@ -32,7 +32,14 @@ def preload_rembg() -> None:
     try:
         from rembg import new_session
 
-        _rembg_session = new_session("u2net")
+        # BiRefNet is significantly more accurate than U2Net for person segmentation
+        # especially with low-contrast edges (bare skin on white, similar-color clothing)
+        try:
+            _rembg_session = new_session("birefnet-general")
+            logger.info("Using BiRefNet model (high accuracy)")
+        except Exception:
+            _rembg_session = new_session("u2net")
+            logger.info("BiRefNet unavailable, falling back to U2Net")
         _rembg_loaded = True
         logger.info("rembg model loaded successfully")
     except Exception as e:

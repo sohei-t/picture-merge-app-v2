@@ -6,6 +6,7 @@ import { downloadImage } from "./utils/image.ts";
 import { useSegmentation } from "./hooks/useSegmentation.ts";
 import { useMerge } from "./hooks/useMerge.ts";
 import { useCanvasDrag } from "./hooks/useCanvasDrag.ts";
+import { useCropMode } from "./hooks/useCropMode.ts";
 import { Header } from "./components/Header.tsx";
 import { ImageDropzone } from "./components/ImageDropzone.tsx";
 import { SegmentedPreview } from "./components/SegmentedPreview.tsx";
@@ -46,6 +47,7 @@ function App() {
   // ===== Hooks =====
   const segmentation = useSegmentation();
   const merge = useMerge();
+  const crop = useCropMode();
 
   // ===== Derived error =====
   const displayError = appError ?? segmentation.error ?? merge.error;
@@ -155,13 +157,16 @@ function App() {
     person2Bbox: segmentation.person2?.bbox ?? null,
     canvasWidth: 640,
     outputWidth: settings.outputSize.width,
+    outputHeight: settings.outputSize.height,
     person1X: settings.person1.x,
     person2X: settings.person2.x,
+    person1YOffset: settings.person1.yOffset,
+    person2YOffset: settings.person2.yOffset,
     onDragEnd: useCallback(
-      (target: "person1" | "person2", newX: number) => {
+      (target: "person1" | "person2", newX: number, newYOffset: number) => {
         const newSettings = {
           ...settings,
-          [target]: { ...settings[target], x: newX },
+          [target]: { ...settings[target], x: newX, yOffset: Math.round(newYOffset) },
         };
         setSettings(newSettings);
         if (segmentation.person1 && segmentation.person2) {
@@ -229,9 +234,29 @@ function App() {
               <PreviewCanvas
                 previewImage={merge.previewImage}
                 isLoading={merge.isLoading}
-                onMouseDown={canEdit ? drag.handleMouseDown : undefined}
-                onMouseMove={canEdit ? drag.handleMouseMove : undefined}
-                onMouseUp={canEdit ? drag.handleMouseUp : undefined}
+                isCropMode={crop.isCropMode}
+                cropRect={crop.cropRect}
+                onMouseDown={
+                  canEdit
+                    ? crop.isCropMode
+                      ? crop.handleCropMouseDown
+                      : drag.handleMouseDown
+                    : undefined
+                }
+                onMouseMove={
+                  canEdit
+                    ? crop.isCropMode
+                      ? crop.handleCropMouseMove
+                      : drag.handleMouseMove
+                    : undefined
+                }
+                onMouseUp={
+                  canEdit
+                    ? crop.isCropMode
+                      ? crop.handleCropMouseUp
+                      : drag.handleMouseUp
+                    : undefined
+                }
               />
             </div>
 
@@ -249,6 +274,14 @@ function App() {
                 onDownload={handleDownload}
                 onReset={handleReset}
                 isMerging={merge.isLoading}
+                isCropMode={crop.isCropMode}
+                hasCropRect={!!crop.cropRect}
+                onCropToggle={crop.isCropMode ? crop.disableCropMode : crop.enableCropMode}
+                onCropExecute={
+                  merge.previewImage
+                    ? () => crop.executeCrop(merge.previewImage!)
+                    : undefined
+                }
               />
             </div>
           </div>

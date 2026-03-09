@@ -1,0 +1,456 @@
+{
+  "project": "picture-merge-app-v2",
+  "version": "1.0",
+  "phases": [
+    {
+      "id": "P2",
+      "name": "Implementation",
+      "tasks": [
+        {
+          "id": "P2-1",
+          "name": "プロジェクト初期化: Vite + React + TypeScript",
+          "description": "Vite + React + TypeScript プロジェクトの作成。Tailwind CSS、react-dropzone等の依存関係インストール。tsconfig.json strict mode設定。ディレクトリ構成の確立（components/, hooks/, types/, api/, utils/）",
+          "estimated_hours": 3,
+          "dependencies": [],
+          "priority": "critical",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": "init",
+          "subtasks": [
+            "npm create vite@latest frontend -- --template react-ts",
+            "Tailwind CSS セットアップ",
+            "react-dropzone, lucide-react 等のインストール",
+            "tsconfig.json strict mode 有効化",
+            "ディレクトリ構成作成 (components/, hooks/, types/, api/, utils/)",
+            "ESLint + Prettier 設定"
+          ]
+        },
+        {
+          "id": "P2-2",
+          "name": "プロジェクト初期化: FastAPI バックエンド",
+          "description": "Python FastAPI プロジェクトの作成。venv作成、requirements.txt（fastapi, uvicorn, rembg, pillow, opencv-python-headless, python-multipart）定義。プロジェクト構造の確立（routers/, services/, models/, utils/）",
+          "estimated_hours": 3,
+          "dependencies": [],
+          "priority": "critical",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": "init",
+          "subtasks": [
+            "venv 作成・有効化",
+            "requirements.txt 作成 (fastapi, uvicorn, rembg, pillow, opencv-python-headless, python-multipart, pillow-heif)",
+            "pip install",
+            "ディレクトリ構成作成 (routers/, services/, models/, utils/)",
+            "main.py エントリポイント作成",
+            "CORS設定 (localhost:5173 → localhost:8000)"
+          ]
+        },
+        {
+          "id": "P2-3",
+          "name": "共通設定・型定義",
+          "description": "フロントエンド/バックエンド共通の型定義。Pydanticモデル（SegmentResponse, MergeRequest, MergeResponse, ErrorResponse等）。TypeScript型定義（AppPhase, MergeSettings, SegmentationResult等）。環境変数設定。",
+          "estimated_hours": 3,
+          "dependencies": ["P2-1", "P2-2"],
+          "priority": "critical",
+          "assignee": "integration",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "Pydanticモデル定義 (models/schemas.py): BBoxModel, ImageSizeModel, SegmentResponse, PersonSettingsModel, ShadowSettingsModel, MergeSettingsModel, MergeRequest, MergeResponse, HealthResponse, ErrorResponse",
+            "TypeScript型定義 (types/index.ts): AppPhase, AppState, InputImage, SegmentationResult, MergeSettings, PreviewState, CanvasState, RootState",
+            "定数定義: OUTPUT_PRESETS, DEFAULT_MERGE_SETTINGS, ERROR_CODES",
+            "環境変数設定 (.env): VITE_API_URL=http://localhost:8000"
+          ]
+        },
+        {
+          "id": "P2-4",
+          "name": "バックエンド: rembg セグメンテーション API",
+          "description": "POST /api/segment エンドポイント実装。multipart/form-data で画像を受け取り、rembg(U2Net)で背景除去。アルファマット境界のガウシアンブラー後処理。BBox算出、足元Y座標検出。結果をインメモリストア(LRU 10件)に保存しIDを返却。長辺4000px超の自動リサイズ。Content-Type/マジックバイト検証。20MBサイズ制限。",
+          "estimated_hours": 8,
+          "dependencies": ["P2-3"],
+          "priority": "critical",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "画像デコードサービス: multipart受信 → PIL Image変換、Content-Type検証、マジックバイト検証、20MBサイズ制限",
+            "画像リサイズ: 長辺4000px超の場合にリサイズ",
+            "rembgセグメンテーション実行: rembg.remove() 呼び出し",
+            "アルファマット後処理: ガウシアンブラーで境界を滑らかに",
+            "BBox算出: アルファチャンネルから人物領域の矩形を計算",
+            "足元Y座標検出: BBox下端からfoot_yを算出",
+            "SegmentationStore実装: OrderedDict LRU方式、MAX_ENTRIES=10",
+            "レスポンス組み立て: id, segmented_image(base64), bbox, foot_y, original_size, processing_time_ms",
+            "エラーハンドリング: 人物未検出(422), ファイル形式不正(400), サイズ超過(413)"
+          ]
+        },
+        {
+          "id": "P2-5",
+          "name": "バックエンド: 合成パイプライン基盤",
+          "description": "画像合成パイプラインのコア実装。MergeContext管理、色調補正（LABヒストグラムマッチング）、自動スケール計算（BBox高さ比、0.8-1.2クランプ）、影生成（ガウシアンブラー楕円）、最終合成（背景+影+人物アルファブレンディング）。",
+          "estimated_hours": 8,
+          "dependencies": ["P2-4"],
+          "priority": "critical",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "MergeContext生成: セグメンテーション結果ID参照 → CroppedPerson生成",
+            "色調補正サービス: LAB色空間変換 → チャンネル別 mean/std マッチング → BGR変換",
+            "自動スケール計算: BBox高さ比率 → 0.8-1.2クランプ → AutoScaleResult生成",
+            "位置計算: person.x × output_width, 足元を下端80%に配置, y_offset適用",
+            "影生成サービス: 楕円描画(person_width*0.8, person_width*0.15) → ガウシアンブラー(kernel=21, sigma=10) → intensity適用",
+            "最終合成: 背景キャンバス生成 → 影レイヤー合成 → 人物1,2アルファブレンディング",
+            "出力処理: preview_mode=true→512x512 JPEG(q=70) / false→指定サイズPNG → base64エンコード"
+          ]
+        },
+        {
+          "id": "P2-6",
+          "name": "バックエンド: 合成API (POST /api/merge)",
+          "description": "POST /api/merge エンドポイント実装。セグメンテーション結果IDで画像を参照（base64再送不要）。preview_mode対応（true: 512x512 JPEG, false: フル解像度PNG）。MergeRequest バリデーション。合成パイプライン呼び出し。処理時間計測。",
+          "estimated_hours": 4,
+          "dependencies": ["P2-5"],
+          "priority": "critical",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "MergeRequest受信・バリデーション (Pydantic)",
+            "SegmentationStoreからID参照で画像取得",
+            "合成パイプライン呼び出し (preview_mode切り替え)",
+            "MergeResponse組み立て: merged_image(base64), processing_time_ms, output_size",
+            "エラーハンドリング: invalid_segment_id(404), merge_failed(500)"
+          ]
+        },
+        {
+          "id": "P2-7",
+          "name": "バックエンド: ヘルスチェックAPI + HEIC対応",
+          "description": "GET /api/health エンドポイント。rembgモデルのロード状態確認。HEIC/HEIF形式のデコード対応（pillow-heif）。",
+          "estimated_hours": 2,
+          "dependencies": ["P2-2"],
+          "priority": "high",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "GET /api/health: status, rembg_loaded, version返却",
+            "rembgモデルのロード状態チェック（起動時にU2Netをプリロード）",
+            "HEIC/HEIFデコード: pillow-heifによる変換処理",
+            "pillow-heif未インストール時のグレースフルフォールバック"
+          ]
+        },
+        {
+          "id": "P2-8",
+          "name": "バックエンド: ユニットテスト",
+          "description": "バックエンドの単体テスト。pytest使用。セグメンテーションAPI、合成パイプライン、色調補正、影生成、自動スケール計算、SegmentationStore、バリデーションのテスト。",
+          "estimated_hours": 6,
+          "dependencies": ["P2-6", "P2-7"],
+          "priority": "high",
+          "assignee": "backend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "pytest + httpx セットアップ",
+            "POST /api/segment テスト: 正常系（JPEG/PNG/WebP）、異常系（非画像、サイズ超過、人物未検出）",
+            "POST /api/merge テスト: 正常系（preview_mode=true/false）、異常系（invalid ID、不正パラメータ）",
+            "色調補正ユニットテスト: LABマッチング結果の検証",
+            "影生成ユニットテスト: 楕円・ブラーの出力検証",
+            "自動スケール計算テスト: クランプ範囲、位置計算の検証",
+            "SegmentationStoreテスト: LRU動作、MAX_ENTRIES制限",
+            "GET /api/health テスト"
+          ]
+        },
+        {
+          "id": "P2-9",
+          "name": "フロントエンド: レイアウト・コンポーネント構成",
+          "description": "アプリケーション全体のレイアウト構築。2カラムレイアウト（左: 入力パネル、右: プレビュー+設定）。ヘッダー、フッター。状態管理(useReducer/Context)のセットアップ。AppPhase状態遷移の実装。",
+          "estimated_hours": 4,
+          "dependencies": ["P2-3"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": "frontend",
+          "subtasks": [
+            "App.tsx: 2カラムレイアウト (Tailwind CSS grid/flex)",
+            "Header コンポーネント: アプリタイトル",
+            "useAppState カスタムフック: AppPhase状態遷移管理 (useReducer)",
+            "AppContext: 状態のグローバル共有",
+            "ローディングスピナーコンポーネント",
+            "エラー表示コンポーネント (ErrorBoundary含む)"
+          ]
+        },
+        {
+          "id": "P2-10",
+          "name": "フロントエンド: 写真入力UI",
+          "description": "ドラッグ&ドロップ / ファイル選択による写真入力。react-dropzoneの統合。サムネイル表示。バリデーション（形式、サイズ20MB制限）。エラーメッセージ表示。",
+          "estimated_hours": 4,
+          "dependencies": ["P2-9"],
+          "priority": "critical",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "ImageDropzone コンポーネント: react-dropzone統合",
+            "ファイルバリデーション: JPEG/PNG/WebP/HEIC対応、20MB制限",
+            "サムネイル生成・表示 (URL.createObjectURL)",
+            "2つのドロップゾーンの状態管理",
+            "エラーメッセージ表示（形式不正、サイズ超過）",
+            "ファイル選択ダイアログ対応"
+          ]
+        },
+        {
+          "id": "P2-11",
+          "name": "フロントエンド: API通信レイヤー",
+          "description": "バックエンドAPI通信のクライアント実装。fetch APIラッパー。セグメンテーションAPI呼び出し（multipart/form-data送信）。合成API呼び出し（JSON POST）。ヘルスチェック。エラーハンドリング。",
+          "estimated_hours": 4,
+          "dependencies": ["P2-9"],
+          "priority": "critical",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "api/client.ts: fetch APIラッパー（エラーハンドリング共通化）",
+            "api/segment.ts: POST /api/segment (multipart/form-data)",
+            "api/merge.ts: POST /api/merge (JSON)",
+            "api/health.ts: GET /api/health",
+            "useSegmentation カスタムフック: セグメンテーション呼び出し + 状態管理",
+            "useMergePreview カスタムフック: プレビュー取得 + デバウンス"
+          ]
+        },
+        {
+          "id": "P2-12",
+          "name": "フロントエンド: セグメンテーション結果表示",
+          "description": "セグメンテーション処理の実行・結果表示。2枚同時処理。ローディングスピナー + プログレス表示。切り抜き結果（透過PNG）のサムネイル表示。処理完了後の自動プレビュー遷移。",
+          "estimated_hours": 3,
+          "dependencies": ["P2-10", "P2-11"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "SegmentationPanel コンポーネント: 切り抜き結果サムネイル2枚表示",
+            "2枚同時セグメンテーション実行ロジック (Promise.all)",
+            "ローディングスピナー + プログレステキスト表示",
+            "処理完了後の自動プレビューAPI呼び出し",
+            "セグメンテーション失敗時のエラー表示"
+          ]
+        },
+        {
+          "id": "P2-13",
+          "name": "フロントエンド: 合成設定パネル",
+          "description": "合成パラメータの調整UI。背景色カラーピッカー、出力サイズプリセット選択、人物X位置スライダー、スケールスライダー、影ON/OFF・強度スライダー、色調補正ON/OFF。デバウンス付きプレビュー更新連携。",
+          "estimated_hours": 6,
+          "dependencies": ["P2-9"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": "frontend",
+          "subtasks": [
+            "SettingsPanel コンポーネント (折りたたみ可能)",
+            "BackgroundColorPicker: カラーピッカー (input type=color)",
+            "OutputSizeSelector: プリセットドロップダウン + カスタムサイズ入力",
+            "PersonPositionSlider: X位置スライダー (0-100%) × 2人分",
+            "PersonScaleSlider: スケールスライダー (50-200%) × 2人分",
+            "ShadowControls: ON/OFFトグル + 強度スライダー",
+            "ColorCorrectionToggle: ON/OFFトグル",
+            "useMergeSettings カスタムフック: 設定変更管理 + デバウンス(300ms/500ms)"
+          ]
+        },
+        {
+          "id": "P2-14",
+          "name": "フロントエンド: プレビューCanvas",
+          "description": "合成プレビューの表示。バックエンドから受け取ったプレビュー画像をCanvas上に描画。親コンテナ幅に合わせた可変サイズ（max 640px）。Canvas上のドラッグ操作（人物位置微調整）。BBoxベースのヒットテスト。",
+          "estimated_hours": 6,
+          "dependencies": ["P2-12", "P2-13"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "MergeCanvas コンポーネント: Canvas要素、レスポンシブサイズ(max 640px)",
+            "プレビュー画像描画: base64 → Image → drawImage",
+            "ドラッグ操作: mousedown/mousemove/mouseup イベントハンドラ",
+            "ヒットテスト: BBox座標をCanvas座標に変換 → クリック判定",
+            "ドラッグ中のオーバーレイ表示（ローカル描画）",
+            "mouseup時の新座標 → settings反映 → プレビューAPI呼び出し",
+            "useCanvasDrag カスタムフック: ドラッグ状態管理"
+          ]
+        },
+        {
+          "id": "P2-15",
+          "name": "フロントエンド: ダウンロード機能",
+          "description": "フル解像度合成画像のダウンロード。ダウンロードボタン → POST /api/merge (preview_mode=false) → base64デコード → Blobダウンロード。ファイル名: merged_{timestamp}.png。処理中ローディング表示。",
+          "estimated_hours": 3,
+          "dependencies": ["P2-14"],
+          "priority": "critical",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "DownloadButton コンポーネント",
+            "フル解像度合成API呼び出し (preview_mode=false)",
+            "base64 → Blob → URL.createObjectURL → a.download",
+            "ファイル名生成: merged_{timestamp}.png",
+            "ダウンロード中のローディング表示",
+            "ダウンロード完了後の状態遷移 (COMPLETE)"
+          ]
+        },
+        {
+          "id": "P2-16",
+          "name": "フロントエンド: リセット・状態表示",
+          "description": "リセット機能と処理状態の視覚的表示。リセットボタンで全状態をIDLEに復帰。各AppPhase (IDLE, ONE_UPLOADED, SEGMENTING, PREVIEW, MERGING, COMPLETE, ERROR) の視覚的区別。エラー時のリトライ/リセットボタン。",
+          "estimated_hours": 3,
+          "dependencies": ["P2-9"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": "frontend",
+          "subtasks": [
+            "ResetButton コンポーネント: 全状態クリア → IDLE",
+            "StatusIndicator コンポーネント: AppPhaseに応じた表示切り替え",
+            "各Phase対応UI: スピナー, テキスト, ボタン",
+            "ERROR状態: エラーメッセージ + リトライ/リセットボタン",
+            "COMPLETE状態: 成功メッセージ + 「もう1枚作る」ボタン"
+          ]
+        },
+        {
+          "id": "P2-17",
+          "name": "フロントエンド: ユニットテスト",
+          "description": "フロントエンドの単体テスト。Vitest + React Testing Library使用。コンポーネント、カスタムフック、API通信レイヤーのテスト。",
+          "estimated_hours": 6,
+          "dependencies": ["P2-15", "P2-16"],
+          "priority": "high",
+          "assignee": "frontend-dev",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "Vitest + React Testing Library セットアップ",
+            "ImageDropzone テスト: D&D, バリデーション, サムネイル表示",
+            "SettingsPanel テスト: パラメータ変更, デバウンス動作",
+            "MergeCanvas テスト: 描画, ドラッグ操作",
+            "API通信レイヤーテスト: fetch mock, エラーハンドリング",
+            "カスタムフックテスト: useAppState, useSegmentation, useMergePreview",
+            "状態遷移テスト: AppPhase遷移の正確性"
+          ]
+        },
+        {
+          "id": "P2-18",
+          "name": "統合: Frontend → Backend API結合",
+          "description": "フロントエンドとバックエンドの結合テスト。E2Eフロー確認: 写真入力 → セグメンテーション → プレビュー → パラメータ調整 → ダウンロード。CORS動作確認。エラーケースの結合テスト。",
+          "estimated_hours": 4,
+          "dependencies": ["P2-8", "P2-17"],
+          "priority": "critical",
+          "assignee": "integration",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "CORS動作確認 (localhost:5173 → localhost:8000)",
+            "E2Eフロー: 写真2枚入力 → セグメンテーション → プレビュー表示",
+            "E2Eフロー: パラメータ調整 → プレビュー更新 → ダウンロード",
+            "Canvas ドラッグ操作 → API呼び出し → プレビュー更新の動作確認",
+            "エラーケース: サーバー未起動、セグメンテーション失敗、不正画像",
+            "パフォーマンス確認: セグメンテーション<3秒, プレビュー<200ms"
+          ]
+        },
+        {
+          "id": "P2-19",
+          "name": "統合: launch_app.command 作成",
+          "description": "ワンクリック起動スクリプト。Python venv作成・有効化、pip install、npm install、バックエンド起動(uvicorn :8000)、フロントエンド起動(npm run dev :5173)、ブラウザ自動オープン。",
+          "estimated_hours": 2,
+          "dependencies": ["P2-18"],
+          "priority": "high",
+          "assignee": "integration",
+          "status": "pending",
+          "parallel_group": null,
+          "subtasks": [
+            "launch_app.command シェルスクリプト作成",
+            "Python venv 自動作成・有効化",
+            "pip install -r requirements.txt 自動実行",
+            "npm install 自動実行",
+            "バックエンド起動 (uvicorn main:app --host 0.0.0.0 --port 8000)",
+            "フロントエンド起動 (npm run dev)",
+            "ブラウザ自動オープン (open http://localhost:5173)",
+            "chmod +x 権限付与"
+          ]
+        }
+      ],
+      "critical_path": [
+        "P2-2",
+        "P2-3",
+        "P2-4",
+        "P2-5",
+        "P2-6",
+        "P2-8",
+        "P2-18"
+      ],
+      "parallel_groups": {
+        "init": {
+          "description": "プロジェクト初期化（フロントエンド/バックエンド並列）",
+          "tasks": ["P2-1", "P2-2"]
+        },
+        "frontend": {
+          "description": "フロントエンド並列実装可能タスク",
+          "tasks": ["P2-9", "P2-13", "P2-16"]
+        },
+        "backend_pipeline": {
+          "description": "バックエンド合成パイプライン（順次依存）",
+          "tasks": ["P2-4", "P2-5", "P2-6"]
+        }
+      },
+      "execution_strategy": {
+        "description": "バックエンドのセグメンテーション→合成パイプラインがクリティカルパス。フロントエンドのレイアウト・設定パネル・状態表示は並列で進行可能。バックエンドAPIが完成次第、統合テストを実施。",
+        "wave_1_parallel": ["P2-1 (frontend-dev)", "P2-2 (backend-dev)"],
+        "wave_2_parallel": ["P2-3 (integration)"],
+        "wave_3_parallel": ["P2-4 (backend-dev)", "P2-9 (frontend-dev)", "P2-7 (backend-dev)"],
+        "wave_4_parallel": ["P2-5 (backend-dev)", "P2-10 (frontend-dev)", "P2-11 (frontend-dev)", "P2-13 (frontend-dev)", "P2-16 (frontend-dev)"],
+        "wave_5_parallel": ["P2-6 (backend-dev)", "P2-12 (frontend-dev)"],
+        "wave_6_parallel": ["P2-8 (backend-dev)", "P2-14 (frontend-dev)"],
+        "wave_7_parallel": ["P2-15 (frontend-dev)"],
+        "wave_8_parallel": ["P2-17 (frontend-dev)"],
+        "wave_9_sequential": ["P2-18 (integration)", "P2-19 (integration)"]
+      }
+    }
+  ],
+  "summary": {
+    "total_tasks": 19,
+    "total_estimated_hours": 82,
+    "critical_path_hours": 36,
+    "critical_path_tasks": ["P2-2", "P2-3", "P2-4", "P2-5", "P2-6", "P2-8", "P2-18"],
+    "assignee_breakdown": {
+      "backend-dev": "34 hours (P2-2, P2-4, P2-5, P2-6, P2-7, P2-8)",
+      "frontend-dev": "42 hours (P2-1, P2-9, P2-10, P2-11, P2-12, P2-13, P2-14, P2-15, P2-16, P2-17)",
+      "integration": "9 hours (P2-3, P2-18, P2-19)"
+    }
+  },
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "プロジェクト初期化完了",
+      "tasks": ["P2-1", "P2-2", "P2-3"],
+      "estimated_hours_cumulative": 9
+    },
+    {
+      "id": "M2",
+      "name": "セグメンテーションAPI完成",
+      "tasks": ["P2-4", "P2-7"],
+      "estimated_hours_cumulative": 19
+    },
+    {
+      "id": "M3",
+      "name": "合成パイプライン完成",
+      "tasks": ["P2-5", "P2-6"],
+      "estimated_hours_cumulative": 31
+    },
+    {
+      "id": "M4",
+      "name": "フロントエンド主要機能完成",
+      "tasks": ["P2-9", "P2-10", "P2-11", "P2-12", "P2-13", "P2-14", "P2-15", "P2-16"],
+      "estimated_hours_cumulative": 75
+    },
+    {
+      "id": "M5",
+      "name": "テスト・統合完了",
+      "tasks": ["P2-8", "P2-17", "P2-18", "P2-19"],
+      "estimated_hours_cumulative": 82
+    }
+  ]
+}

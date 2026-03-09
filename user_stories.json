@@ -1,0 +1,290 @@
+{
+  "version": "1.0.0",
+  "project": "picture-merge-app-v2",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "写真のドラッグ&ドロップ入力",
+      "description": "ユーザーとして、2枚の人物写真をドラッグ&ドロップで入力したい。直感的な操作で素早く写真を取り込めるようにする。",
+      "priority": "P0",
+      "feature": "F1",
+      "acceptance_criteria": [
+        "2つのドロップゾーンが表示される",
+        "画像ファイルをドロップすると即座にサムネイルが表示される",
+        "JPEG, PNG, WebP形式の画像を受け付ける",
+        "20MBを超えるファイルはエラーメッセージを表示して拒否する",
+        "画像以外のファイルはエラーメッセージを表示して拒否する",
+        "ファイル選択ダイアログからの入力にも対応する"
+      ],
+      "estimation_hours": 4
+    },
+    {
+      "id": "US-002",
+      "title": "入力画像のバリデーション",
+      "description": "ユーザーとして、不正なファイルを入力した場合にわかりやすいエラーメッセージを見たい。",
+      "priority": "P0",
+      "feature": "F1",
+      "acceptance_criteria": [
+        "対応していないファイル形式の場合「対応していないファイル形式です。JPEG/PNG/WebPをご使用ください」と表示",
+        "20MB超の場合「ファイルサイズが20MBを超えています」と表示",
+        "エラー後も再入力可能な状態に戻る",
+        "サーバー側でもContent-Typeとマジックバイトを検証する"
+      ],
+      "estimation_hours": 2
+    },
+    {
+      "id": "US-003",
+      "title": "自動人物セグメンテーション",
+      "description": "ユーザーとして、写真を入力したら自動で人物の切り抜きが行われてほしい。手動操作なしで背景が除去される。",
+      "priority": "P0",
+      "feature": "F2",
+      "acceptance_criteria": [
+        "2枚の写真入力完了後、自動的にセグメンテーションAPIが呼ばれる",
+        "処理中はローディングスピナーと「人物を切り抜いています...」のテキストが表示される",
+        "処理完了後、切り抜き結果（透過PNG）がサムネイルで表示される",
+        "処理時間が3秒以内/枚（M4チップ基準）",
+        "人物が検出できない場合はエラーメッセージを表示する"
+      ],
+      "estimation_hours": 6
+    },
+    {
+      "id": "US-004",
+      "title": "rembgセグメンテーションAPIエンドポイント",
+      "description": "バックエンドとして、POST /api/segmentで画像を受け取り、rembg(U2Net)で人物セグメンテーションを実行し、透過PNG + BBox + 足元座標を返却する。",
+      "priority": "P0",
+      "feature": "F2",
+      "acceptance_criteria": [
+        "multipart/form-dataで画像を受け取る",
+        "rembg(U2Net)で背景除去を実行する",
+        "アルファマット境界にガウシアンブラーを適用して自然なエッジにする",
+        "BBox (x, y, width, height) を算出して返却する",
+        "足元Y座標 (foot_y) を算出して返却する",
+        "一意のID (seg_{uuid}) を発行して結果をメモリに保持する",
+        "長辺4000px超の入力画像は自動リサイズする",
+        "レスポンスにprocessing_time_msを含む"
+      ],
+      "estimation_hours": 8
+    },
+    {
+      "id": "US-005",
+      "title": "合成プレビュー表示",
+      "description": "ユーザーとして、セグメンテーション完了後に自動で合成プレビューを見たい。デフォルト設定で十分な品質の合成結果がすぐに表示される。",
+      "priority": "P0",
+      "feature": "F5",
+      "acceptance_criteria": [
+        "セグメンテーション完了後、自動的に合成プレビューAPIが呼ばれる",
+        "512x512の低解像度プレビューがCanvas上に表示される",
+        "デフォルト設定（白背景、左右配置、影あり）で自然な合成結果が表示される",
+        "プレビュー取得が200ms以内で完了する"
+      ],
+      "estimation_hours": 4
+    },
+    {
+      "id": "US-006",
+      "title": "合成APIエンドポイント（プレビュー/フル解像度兼用）",
+      "description": "バックエンドとして、POST /api/mergeでセグメンテーション結果IDとパラメータを受け取り、合成画像を返却する。preview_modeで低解像度/フル解像度を切り替える。",
+      "priority": "P0",
+      "feature": "F5/F6",
+      "acceptance_criteria": [
+        "セグメンテーション結果IDで画像を参照する（base64再送不要）",
+        "settings.background_color, output_width/height, person1/2のx/y_offset/scale, shadow, color_correctionを受け付ける",
+        "preview_mode=trueで512x512 JPEG (quality=70) を返却する",
+        "preview_mode=falseで指定サイズのPNGを返却する",
+        "合成パイプライン: 色調補正→スケール計算→影生成→合成の順で実行する",
+        "preview_mode=trueの処理時間が200ms以内",
+        "preview_mode=falseの処理時間が1秒以内"
+      ],
+      "estimation_hours": 10
+    },
+    {
+      "id": "US-007",
+      "title": "合成画像のダウンロード",
+      "description": "ユーザーとして、合成結果をPNGファイルとしてダウンロードしたい。",
+      "priority": "P0",
+      "feature": "F6",
+      "acceptance_criteria": [
+        "「ダウンロード」ボタンをクリックするとフル解像度合成APIが呼ばれる",
+        "処理中はローディング表示がされる",
+        "合成完了後、ブラウザのダウンロードダイアログが表示される",
+        "ファイル名が merged_{timestamp}.png 形式",
+        "出力サイズが設定値に従う（デフォルト1024x1024）",
+        "PNG形式で背景色付き（透過なし）"
+      ],
+      "estimation_hours": 3
+    },
+    {
+      "id": "US-008",
+      "title": "合成設定パネル",
+      "description": "ユーザーとして、合成パラメータをスライダーやカラーピッカーで直感的に調整したい。",
+      "priority": "P1",
+      "feature": "F3",
+      "acceptance_criteria": [
+        "背景色をカラーピッカーで選択できる",
+        "出力サイズをプリセット（1024x1024, 1280x720, 720x1280）から選択できる",
+        "カスタムサイズを入力できる（最大4096x4096）",
+        "人物1/2のX位置をスライダーで調整できる（0-100%）",
+        "人物1/2のスケールをスライダーで調整できる（50-200%）",
+        "影のON/OFFを切り替えられる",
+        "影の強度をスライダーで調整できる（0-100%）",
+        "色調補正のON/OFFを切り替えられる",
+        "各パラメータ変更時にデバウンス付きでプレビューが更新される"
+      ],
+      "estimation_hours": 6
+    },
+    {
+      "id": "US-009",
+      "title": "自動スケール調整",
+      "description": "ユーザーとして、2人の身長が自然に見えるよう自動でスケールが調整されてほしい。",
+      "priority": "P1",
+      "feature": "F4",
+      "acceptance_criteria": [
+        "セグメンテーション完了後、BBox高さの比率から自動スケールが算出される",
+        "スケール比が0.8-1.2倍の範囲にクランプされる",
+        "足元が同一水平線に配置される",
+        "横方向の間隔が肩幅1つ分程度に自動設定される",
+        "自動算出されたスケール値がUIのスライダーに反映される",
+        "手動スケール設定で上書き可能"
+      ],
+      "estimation_hours": 4
+    },
+    {
+      "id": "US-010",
+      "title": "Canvas上のドラッグ操作",
+      "description": "ユーザーとして、Canvas上で人物をドラッグして位置を微調整したい。",
+      "priority": "P1",
+      "feature": "F5-DRAG",
+      "acceptance_criteria": [
+        "人物領域をマウスダウンするとドラッグが開始される",
+        "ドラッグ中は人物のX位置がリアルタイムで移動する（ローカル描画）",
+        "マウスアップ時に新しい位置がsettingsに反映される",
+        "マウスアップ時にプレビューAPIが呼ばれて正確な合成結果が表示される",
+        "対象人物がハイライト表示される",
+        "BBox外のクリックで選択が解除される"
+      ],
+      "estimation_hours": 6
+    },
+    {
+      "id": "US-011",
+      "title": "色調補正機能",
+      "description": "ユーザーとして、2人の写真の色温度・明るさが自動で統一されてほしい。異なる照明条件で撮影された写真でも自然に見える。",
+      "priority": "P1",
+      "feature": "F3-COLOR",
+      "acceptance_criteria": [
+        "デフォルトで色調補正がONになっている",
+        "LAB色空間でのヒストグラムマッチングが実行される",
+        "人物1を基準に人物2の色温度・明るさが補正される",
+        "色調補正ON/OFFの切り替えがプレビューに即時反映される",
+        "補正が不自然にならないよう適用度合いがクランプされる"
+      ],
+      "estimation_hours": 4
+    },
+    {
+      "id": "US-012",
+      "title": "影生成機能",
+      "description": "ユーザーとして、合成画像の足元に自然な影が表示されてほしい。影があることで地面に立っている感覚が出る。",
+      "priority": "P1",
+      "feature": "F3",
+      "acceptance_criteria": [
+        "デフォルトで影がONになっている",
+        "足元位置にガウシアンブラー楕円の影が生成される",
+        "影のサイズが人物のサイズに比例する",
+        "影の強度がスライダーで調整できる",
+        "影のON/OFF切り替えがプレビューに反映される"
+      ],
+      "estimation_hours": 3
+    },
+    {
+      "id": "US-013",
+      "title": "HEIC/HEIF写真入力対応",
+      "description": "ユーザーとして、iPhoneで撮影したHEIC形式の写真をそのまま入力したい。",
+      "priority": "P1",
+      "feature": "F1-HEIC",
+      "acceptance_criteria": [
+        "HEIC/HEIF形式のファイルがドロップ/選択で受け付けられる",
+        "サーバー側でpillow-heifを使用してデコードされる",
+        "デコード後はJPEG/PNGと同等に処理される",
+        "pillow-heifが未インストールの場合はエラーメッセージで案内する"
+      ],
+      "estimation_hours": 3
+    },
+    {
+      "id": "US-014",
+      "title": "ヘルスチェックエンドポイント",
+      "description": "フロントエンドとして、バックエンドの起動状態を確認したい。サーバー未起動時に適切なエラーを表示する。",
+      "priority": "P0",
+      "feature": "F2",
+      "acceptance_criteria": [
+        "GET /api/health が status, rembg_loaded, version を返却する",
+        "フロントエンド起動時にヘルスチェックを実行する",
+        "サーバー未起動の場合「サーバーに接続できません」と表示する",
+        "rembg未ロードの場合「モデルを読み込み中です」と表示する"
+      ],
+      "estimation_hours": 2
+    },
+    {
+      "id": "US-015",
+      "title": "リセット機能",
+      "description": "ユーザーとして、リセットボタンで初期状態に戻りたい。別の写真で新しく合成をやり直せる。",
+      "priority": "P0",
+      "feature": "F1",
+      "acceptance_criteria": [
+        "リセットボタンをクリックすると全状態がクリアされる",
+        "入力写真、セグメンテーション結果、プレビュー、設定がすべて初期化される",
+        "初期状態（空のD&Dゾーン2つ）に戻る",
+        "確認ダイアログなしで即座にリセットされる"
+      ],
+      "estimation_hours": 1
+    },
+    {
+      "id": "US-016",
+      "title": "レスポンシブレイアウト（デスクトップ）",
+      "description": "ユーザーとして、デスクトップ画面で快適に操作できるレイアウトがほしい。",
+      "priority": "P0",
+      "feature": "F5",
+      "acceptance_criteria": [
+        "最小解像度1280x720で正常に表示される",
+        "左側に入力パネル、右側にプレビュー+設定パネルの2カラムレイアウト",
+        "Canvas表示が親コンテナ幅に合わせて可変する（max 640px）",
+        "設定パネルが折りたたみ可能"
+      ],
+      "estimation_hours": 4
+    },
+    {
+      "id": "US-017",
+      "title": "処理状態の表示",
+      "description": "ユーザーとして、現在の処理状態が明確にわかるようにしたい。待ち時間のストレスを軽減する。",
+      "priority": "P0",
+      "feature": "F5",
+      "acceptance_criteria": [
+        "IDLE, ONE_UPLOADED, SEGMENTING, PREVIEW, MERGING, COMPLETE, ERRORの各状態が視覚的に区別できる",
+        "処理中はスピナー + テキスト（例:「人物を切り抜いています...」）が表示される",
+        "処理時間が3秒以上の場合、経過時間を表示する",
+        "エラー状態ではリトライ/リセットボタンが表示される"
+      ],
+      "estimation_hours": 3
+    },
+    {
+      "id": "US-018",
+      "title": "アプリ起動スクリプト",
+      "description": "ユーザーとして、launch_app.commandをダブルクリックするだけでアプリを起動したい。",
+      "priority": "P0",
+      "feature": "-",
+      "acceptance_criteria": [
+        "Python仮想環境が存在しない場合は自動作成する",
+        "pip install -r requirements.txt が自動実行される",
+        "npm install が自動実行される",
+        "バックエンドサーバー（:8000）が起動する",
+        "フロントエンド（:5173）が起動する",
+        "ブラウザが自動で開く"
+      ],
+      "estimation_hours": 3
+    }
+  ],
+  "summary": {
+    "total_stories": 18,
+    "p0_count": 11,
+    "p1_count": 7,
+    "p2_count": 0,
+    "total_estimation_hours": 76
+  }
+}

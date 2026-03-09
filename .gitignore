@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.template
+
+# 🚨 セキュリティ: 認証情報は絶対にコミットしない
+credentials/
+*.key.json
+*-key.json
+*.pem
+*.p12
+*.pfx
+service-account*.json
+gcp-*.json
+imagen-*.json
+secrets/
+private/
+*.secret
+*.private
+
+# Temporary files
+tmp/
+temp/
+
+# Project-specific generated files (should be generated per project)
+AUDIO_PROMPTS.json
+IMAGE_PROMPTS.json
+# GCP credentials
+_workflow/credentials/*.json
+
+# Environment variables (contains API keys)
+_workflow/.env

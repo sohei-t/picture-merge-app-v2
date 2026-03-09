@@ -1,0 +1,202 @@
+{
+  "project": {
+    "name": "{{project_name}}",
+    "type": "{{project_type}}",
+    "created": "{{timestamp}}"
+  },
+  "metadata": {
+    "total_tasks": 0,
+    "critical_path_length": 0,
+    "parallel_tracks": 0,
+    "estimated_duration": "0 hours"
+  },
+  "critical_path": {
+    "description": "最も時間がかかる依存関係のチェーン。これが全体の最短完了時間を決定",
+    "tasks": [
+      {
+        "id": "CP001",
+        "name": "API仕様定義",
+        "duration": "2h",
+        "dependencies": [],
+        "priority": "CRITICAL",
+        "blocking": ["FE001", "BE001", "TEST001"]
+      },
+      {
+        "id": "CP002",
+        "name": "認証システム実装",
+        "duration": "4h",
+        "dependencies": ["CP001"],
+        "priority": "CRITICAL",
+        "blocking": ["FE002", "BE002", "TEST002"]
+      },
+      {
+        "id": "CP003",
+        "name": "データモデル定義",
+        "duration": "3h",
+        "dependencies": ["CP001"],
+        "priority": "CRITICAL",
+        "blocking": ["BE003", "DB001"]
+      }
+    ]
+  },
+  "parallel_tracks": {
+    "track_1": {
+      "name": "Frontend Track",
+      "can_start_after": ["CP001"],
+      "tasks": [
+        {
+          "id": "FE001",
+          "name": "UIコンポーネント作成",
+          "duration": "3h",
+          "dependencies": ["CP001"],
+          "priority": "HIGH",
+          "can_parallel": true
+        },
+        {
+          "id": "FE002",
+          "name": "認証UI実装",
+          "duration": "2h",
+          "dependencies": ["CP002", "FE001"],
+          "priority": "HIGH",
+          "can_parallel": false
+        }
+      ]
+    },
+    "track_2": {
+      "name": "Backend Track",
+      "can_start_after": ["CP001"],
+      "tasks": [
+        {
+          "id": "BE001",
+          "name": "APIエンドポイント実装",
+          "duration": "3h",
+          "dependencies": ["CP001"],
+          "priority": "HIGH",
+          "can_parallel": true
+        },
+        {
+          "id": "BE002",
+          "name": "認証ミドルウェア",
+          "duration": "2h",
+          "dependencies": ["CP002"],
+          "priority": "HIGH",
+          "can_parallel": false
+        },
+        {
+          "id": "BE003",
+          "name": "ビジネスロジック",
+          "duration": "4h",
+          "dependencies": ["CP003", "BE001"],
+          "priority": "MEDIUM",
+          "can_parallel": true
+        }
+      ]
+    },
+    "track_3": {
+      "name": "Database Track",
+      "can_start_after": ["CP003"],
+      "tasks": [
+        {
+          "id": "DB001",
+          "name": "スキーマ作成",
+          "duration": "2h",
+          "dependencies": ["CP003"],
+          "priority": "HIGH",
+          "can_parallel": false
+        }
+      ]
+    },
+    "track_4": {
+      "name": "Testing Track",
+      "can_start_after": ["CP001"],
+      "tasks": [
+        {
+          "id": "TEST001",
+          "name": "APIテスト作成",
+          "duration": "2h",
+          "dependencies": ["CP001"],
+          "priority": "MEDIUM",
+          "can_parallel": true
+        },
+        {
+          "id": "TEST002",
+          "name": "認証テスト作成",
+          "duration": "2h",
+          "dependencies": ["CP002"],
+          "priority": "HIGH",
+          "can_parallel": true
+        }
+      ]
+    }
+  },
+  "execution_strategy": {
+    "phase_2_parallel": {
+      "description": "実装フェーズの並列実行戦略",
+      "rules": [
+        "1. クリティカルパスのタスクを最優先で実行",
+        "2. クリティカルパスが完了したら、依存するタスクを即座に開始",
+        "3. 並列可能なタスクは同時実行",
+        "4. リソース競合時はpriorityで判断"
+      ],
+      "execution_order": [
+        {
+          "step": 1,
+          "parallel_tasks": ["CP001"],
+          "duration": "2h",
+          "agents": 1
+        },
+        {
+          "step": 2,
+          "parallel_tasks": ["CP002", "CP003", "FE001", "BE001", "TEST001"],
+          "duration": "4h",
+          "agents": 5
+        },
+        {
+          "step": 3,
+          "parallel_tasks": ["FE002", "BE002", "BE003", "DB001", "TEST002"],
+          "duration": "4h",
+          "agents": 5
+        }
+      ],
+      "total_duration": "10h (sequential: 20h)",
+      "speedup": "50%"
+    }
+  },
+  "dependency_graph": {
+    "description": "タスク間の依存関係をDAG（有向非巡回グラフ）で表現",
+    "visualization": "```mermaid\ngraph TD\n    CP001[API仕様定義] --> CP002[認証システム]\n    CP001 --> CP003[データモデル]\n    CP001 --> FE001[UIコンポーネント]\n    CP001 --> BE001[APIエンドポイント]\n    CP001 --> TEST001[APIテスト]\n    CP002 --> FE002[認証UI]\n    CP002 --> BE002[認証ミドルウェア]\n    CP002 --> TEST002[認証テスト]\n    CP003 --> BE003[ビジネスロジック]\n    CP003 --> DB001[スキーマ作成]\n    FE001 --> FE002\n    BE001 --> BE003\n    \n    style CP001 fill:#f9f,stroke:#333,stroke-width:4px\n    style CP002 fill:#f9f,stroke:#333,stroke-width:4px\n    style CP003 fill:#f9f,stroke:#333,stroke-width:4px\n```"
+  },
+  "scheduling_algorithm": {
+    "type": "critical_path_method",
+    "steps": [
+      "1. すべてのタスクの早期開始時刻(ES)と早期完了時刻(EF)を計算",
+      "2. すべてのタスクの遅延開始時刻(LS)と遅延完了時刻(LF)を計算",
+      "3. スラック時間がゼロのタスクをクリティカルパスとして識別",
+      "4. クリティカルパスのタスクに最高優先度を付与",
+      "5. 並列実行可能なタスクをグループ化",
+      "6. エージェントをタスクに動的に割り当て"
+    ]
+  },
+  "monitoring": {
+    "real_time_tracking": {
+      "critical_path_progress": "percentage",
+      "parallel_tasks_status": "active/completed/blocked",
+      "bottlenecks": "identified_and_highlighted",
+      "estimated_completion": "dynamic_calculation"
+    },
+    "alerts": [
+      {
+        "condition": "critical_path_delay > 10min",
+        "action": "allocate_more_resources"
+      },
+      {
+        "condition": "dependency_not_met",
+        "action": "pause_and_wait"
+      },
+      {
+        "condition": "parallel_conflict",
+        "action": "serialize_execution"
+      }
+    ]
+  }
+}

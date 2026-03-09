@@ -1,0 +1,35 @@
+{
+  "name": "git-worktree-agent",
+  "version": "5.1.0",
+  "description": "AI Agent Orchestration System for Automated Development",
+  "scripts": {
+    "pdf:convert": "node src/pdf_converter.js",
+    "pdf:docs": "node src/pdf_converter.js deliverables/01_documents/",
+    "test:client": "./test_client_workflow.sh",
+    "package:deliverables": "./package_deliverables.sh",
+    "generate-audio:gemini": "python3 src/documenter_agent.py --audio-only",
+    "generate-audio:gcp": "node generate_audio_gcp.js",
+    "generate-audio:lyria": "python3 src/audio_generator_lyria.py AUDIO_PROMPTS.json"
+  },
+  "dependencies": {
+    "@google-cloud/text-to-speech": "^4.2.3",
+    "marked": "^11.1.0",
+    "puppeteer": "^21.6.0"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai-agent",
+    "automation",
+    "development",
+    "git-worktree",
+    "client-deliverables",
+    "portfolio"
+  ],
+  "author": "AI Agent System",
+  "license": "MIT"
+}

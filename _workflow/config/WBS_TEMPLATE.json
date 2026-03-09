@@ -1,0 +1,176 @@
+{
+  "project": {
+    "name": "プロジェクト名",
+    "description": "プロジェクトの説明",
+    "start_date": "2024-12-03",
+    "estimated_duration": "5 days",
+    "critical_path": []
+  },
+  "tasks": [
+    {
+      "id": "T001",
+      "name": "要件定義",
+      "description": "ユーザー要件の明確化",
+      "agent": "requirements_analyst",
+      "dependencies": [],
+      "estimated_hours": 1,
+      "status": "pending",
+      "output": "requirements.md",
+      "priority": "high",
+      "parallel_group": null
+    },
+    {
+      "id": "T002",
+      "name": "WBS作成",
+      "description": "タスク分解と依存関係定義",
+      "agent": "planner",
+      "dependencies": ["T001"],
+      "estimated_hours": 0.5,
+      "status": "pending",
+      "output": "wbs.json",
+      "priority": "high",
+      "parallel_group": null
+    },
+    {
+      "id": "T003",
+      "name": "アーキテクチャ設計",
+      "description": "システム全体設計",
+      "agent": "architect",
+      "dependencies": ["T001"],
+      "estimated_hours": 2,
+      "status": "pending",
+      "output": "architecture.md",
+      "priority": "high",
+      "parallel_group": null
+    },
+    {
+      "id": "T004",
+      "name": "テストコード作成",
+      "description": "TDD用テストコード",
+      "agent": "test_designer",
+      "dependencies": ["T001", "T003"],
+      "estimated_hours": 3,
+      "status": "pending",
+      "output": "tests/",
+      "priority": "high",
+      "parallel_group": null
+    },
+    {
+      "id": "T005",
+      "name": "DB設計・実装",
+      "description": "データベース構築",
+      "agent": "db_expert",
+      "dependencies": ["T003"],
+      "estimated_hours": 3,
+      "status": "pending",
+      "output": "database/",
+      "priority": "medium",
+      "parallel_group": "implementation"
+    },
+    {
+      "id": "T006",
+      "name": "バックエンドAPI実装",
+      "description": "APIサーバー開発",
+      "agent": "backend_dev",
+      "dependencies": ["T004", "T005"],
+      "estimated_hours": 5,
+      "status": "pending",
+      "output": "backend/",
+      "priority": "high",
+      "parallel_group": "implementation"
+    },
+    {
+      "id": "T007",
+      "name": "フロントエンド実装",
+      "description": "UI開発",
+      "agent": "frontend_dev",
+      "dependencies": ["T004", "T006"],
+      "estimated_hours": 5,
+      "status": "pending",
+      "output": "frontend/",
+      "priority": "medium",
+      "parallel_group": "implementation"
+    },
+    {
+      "id": "T008",
+      "name": "単体テスト実行",
+      "description": "ユニットテスト",
+      "agent": "tester",
+      "dependencies": ["T006", "T007"],
+      "estimated_hours": 2,
+      "status": "pending",
+      "output": "test-results/unit/",
+      "priority": "high",
+      "parallel_group": "testing"
+    },
+    {
+      "id": "T009",
+      "name": "統合テスト実行",
+      "description": "システム統合テスト",
+      "agent": "tester",
+      "dependencies": ["T008"],
+      "estimated_hours": 2,
+      "status": "pending",
+      "output": "test-results/integration/",
+      "priority": "high",
+      "parallel_group": "testing"
+    },
+    {
+      "id": "T010",
+      "name": "ドキュメント生成",
+      "description": "技術文書自動生成",
+      "agent": "documenter",
+      "dependencies": ["T006", "T007"],
+      "estimated_hours": 1,
+      "status": "pending",
+      "output": "docs/",
+      "priority": "low",
+      "parallel_group": "documentation"
+    },
+    {
+      "id": "T011",
+      "name": "最終レビュー",
+      "description": "品質確認と承認",
+      "agent": "reviewer",
+      "dependencies": ["T009", "T010"],
+      "estimated_hours": 1,
+      "status": "pending",
+      "output": "review-report.md",
+      "priority": "high",
+      "parallel_group": null
+    }
+  ],
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "計画完了",
+      "tasks": ["T001", "T002", "T003"],
+      "target_date": "Day 1"
+    },
+    {
+      "id": "M2",
+      "name": "実装完了",
+      "tasks": ["T005", "T006", "T007"],
+      "target_date": "Day 3"
+    },
+    {
+      "id": "M3",
+      "name": "テスト完了",
+      "tasks": ["T008", "T009"],
+      "target_date": "Day 4"
+    },
+    {
+      "id": "M4",
+      "name": "リリース準備完了",
+      "tasks": ["T010", "T011"],
+      "target_date": "Day 5"
+    }
+  ],
+  "execution_rules": {
+    "max_parallel_tasks": 3,
+    "check_interval_seconds": 30,
+    "timeout_hours": 24,
+    "retry_on_failure": true,
+    "auto_escalate": true
+  }
+}

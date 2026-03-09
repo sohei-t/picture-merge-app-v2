@@ -1,0 +1,36 @@
+# ポートフォリオリポジトリ用.gitignore
+
+# 管理ファイル（公開不要）
+.slug_mapping.json
+.processed_apps.json
+processed_apps.json
+slug_mapping.json
+*.mapping.json
+
+# 自動生成インデックス（必要に応じて）
+PORTFOLIO_INDEX.md
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 環境ファイル
+.env
+.env.local
+
+# ビルドキャッシュ
+__pycache__/
+*.pyc
+node_modules/
+
+# Git
+.git/
+
+# バックアップ
+*.backup
+*.bak
+*~

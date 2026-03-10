@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import type { AppPhase, MergeSettings, AppError } from "./types/index.ts";
 import { DEFAULT_MERGE_SETTINGS } from "./types/index.ts";
 import { healthCheck } from "./api/client.ts";
@@ -251,17 +251,27 @@ function App() {
     };
   }, [segmentation.person1, segmentation.person2, settings]);
 
-  // ===== Crop with full resolution =====
-  const handleCropExecute = useCallback(() => {
+  // ===== Crop with server-side cropping =====
+  const isCropDownloading = useRef(false);
+  const handleCropExecute = useCallback(async () => {
     if (!segmentation.person1 || !segmentation.person2) return;
-    crop.executeCropFromFull(async () => {
-      const response = await merge.fetchForCrop(
-        segmentation.person1!.id,
-        segmentation.person2!.id,
-        settings
+    const normalizedCrop = crop.getNormalizedCrop();
+    if (!normalizedCrop) return;
+    if (isCropDownloading.current) return;
+    isCropDownloading.current = true;
+    try {
+      const response = await merge.fetchCropped(
+        segmentation.person1.id,
+        segmentation.person2.id,
+        settings,
+        normalizedCrop
       );
-      return response.merged_image;
-    });
+      downloadImage(response.merged_image, `cropped_${response.output_size.width}x${response.output_size.height}`);
+    } catch {
+      // error is handled by merge hook
+    } finally {
+      isCropDownloading.current = false;
+    }
   }, [segmentation.person1, segmentation.person2, settings, merge, crop]);
 
   // ===== Determine if controls should be disabled =====
@@ -363,7 +373,7 @@ function App() {
                 onReset={handleReset}
                 isMerging={merge.isLoading}
                 isCropMode={crop.isCropMode}
-                isCropping={crop.isCropping}
+                isCropping={merge.isLoading && crop.isCropMode}
                 hasCropRect={!!crop.cropRect}
                 onCropToggle={crop.isCropMode ? crop.disableCropMode : crop.enableCropMode}
                 onCropExecute={handleCropExecute}

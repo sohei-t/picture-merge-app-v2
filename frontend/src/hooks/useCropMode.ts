@@ -11,14 +11,12 @@ interface UseCropModeReturn {
   isCropMode: boolean;
   cropRect: CropRect | null;
   isDrawing: boolean;
-  isCropping: boolean;
   enableCropMode: () => void;
   disableCropMode: () => void;
   handleCropMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCropMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCropMouseUp: () => void;
-  executeCrop: (fullResImage: string) => void;
-  executeCropFromFull: (fetchFullRes: () => Promise<string>) => void;
+  getNormalizedCrop: () => { x1: number; y1: number; x2: number; y2: number } | null;
   resetCrop: () => void;
 }
 
@@ -26,7 +24,6 @@ export function useCropMode(): UseCropModeReturn {
   const [isCropMode, setIsCropMode] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [isCropping, setIsCropping] = useState(false);
   const drawingRef = useRef(false);
 
   const enableCropMode = useCallback(() => {
@@ -50,8 +47,8 @@ export function useCropMode(): UseCropModeReturn {
   const getRelativePos = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
+      x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
     };
   };
 
@@ -83,102 +80,26 @@ export function useCropMode(): UseCropModeReturn {
     drawingRef.current = false;
   }, []);
 
-  const cropFromImage = useCallback(
-    (imageDataUrl: string) => {
-      if (!cropRect) return;
-
-      const img = new Image();
-      img.onload = () => {
-        const x1 = Math.min(cropRect.startX, cropRect.endX);
-        const y1 = Math.min(cropRect.startY, cropRect.endY);
-        const x2 = Math.max(cropRect.startX, cropRect.endX);
-        const y2 = Math.max(cropRect.startY, cropRect.endY);
-
-        const sx = Math.round(x1 * img.width);
-        const sy = Math.round(y1 * img.height);
-        const sw = Math.round((x2 - x1) * img.width);
-        const sh = Math.round((y2 - y1) * img.height);
-
-        if (sw < 10 || sh < 10) return;
-
-        const canvas = document.createElement("canvas");
-        canvas.width = sw;
-        canvas.height = sh;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-
-        const dataUrl = canvas.toDataURL("image/png");
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const filename = `cropped_${sw}x${sh}_${timestamp}.png`;
-
-        const blob = dataURLToBlob(dataUrl);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        setIsCropping(false);
-      };
-      img.src = imageDataUrl;
-    },
-    [cropRect]
-  );
-
-  // Crop from a provided image (legacy/fallback)
-  const executeCrop = useCallback(
-    (imageDataUrl: string) => {
-      cropFromImage(imageDataUrl);
-    },
-    [cropFromImage]
-  );
-
-  // Crop from full resolution: fetch full-res first, then crop
-  const executeCropFromFull = useCallback(
-    async (fetchFullRes: () => Promise<string>) => {
-      if (!cropRect) return;
-      setIsCropping(true);
-      try {
-        const fullResImage = await fetchFullRes();
-        cropFromImage(fullResImage);
-      } catch {
-        setIsCropping(false);
-      }
-    },
-    [cropRect, cropFromImage]
-  );
+  const getNormalizedCrop = useCallback(() => {
+    if (!cropRect) return null;
+    const x1 = Math.min(cropRect.startX, cropRect.endX);
+    const y1 = Math.min(cropRect.startY, cropRect.endY);
+    const x2 = Math.max(cropRect.startX, cropRect.endX);
+    const y2 = Math.max(cropRect.startY, cropRect.endY);
+    if (x2 - x1 < 0.01 || y2 - y1 < 0.01) return null;
+    return { x1, y1, x2, y2 };
+  }, [cropRect]);
 
   return {
     isCropMode,
     cropRect,
     isDrawing,
-    isCropping,
     enableCropMode,
     disableCropMode,
     handleCropMouseDown,
     handleCropMouseMove,
     handleCropMouseUp,
-    executeCrop,
-    executeCropFromFull,
+    getNormalizedCrop,
     resetCrop,
   };
-}
-
-function dataURLToBlob(dataUrl: string): Blob {
-  const [header, base64Data] = dataUrl.split(",");
-  const mimeMatch = header.match(/data:(.*?);/);
-  const mime = mimeMatch ? mimeMatch[1] : "image/png";
-  const byteString = atob(base64Data);
-  const ab = new ArrayBuffer(byteString.length);
-  const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([ab], { type: mime });
 }

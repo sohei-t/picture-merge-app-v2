@@ -43,12 +43,19 @@ export function generateDownloadFilename(): string {
   return `merged_${timestamp}.png`;
 }
 
-export function downloadImage(dataUri: string): void {
+export function downloadImage(dataUri: string, filenamePrefix?: string): void {
   const blob = base64ToBlob(dataUri);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = generateDownloadFilename();
+  if (filenamePrefix) {
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const ext = dataUri.includes("image/png") ? "png" : "jpg";
+    a.download = `${filenamePrefix}_${timestamp}.${ext}`;
+  } else {
+    a.download = generateDownloadFilename();
+  }
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

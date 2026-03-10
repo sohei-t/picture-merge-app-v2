@@ -123,6 +123,7 @@ export interface MergeRequest {
   };
   preview_mode: boolean;
   output_format?: "PNG" | "JPEG";
+  crop?: { x1: number; y1: number; x2: number; y2: number };
 }
 
 // ===== App Error =====

@@ -100,6 +100,10 @@ class MergeRequest(BaseModel):
         pattern=r"^(PNG|JPEG)$",
         description="Output format: PNG (lossless) or JPEG (fast)",
     )
+    crop: Optional[dict] = Field(
+        default=None,
+        description="Crop region as ratios: {x1, y1, x2, y2} (0.0-1.0)",
+    )
 
 
 class MergeResponse(BaseModel):

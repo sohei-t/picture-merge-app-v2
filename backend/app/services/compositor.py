@@ -50,6 +50,7 @@ def merge_images(
     settings: MergeSettingsModel,
     preview_mode: bool = False,
     output_format: str = "PNG",
+    crop: dict | None = None,
 ) -> tuple[str, int, tuple[int, int]]:
     """Execute the merge pipeline.
 
@@ -157,7 +158,19 @@ def merge_images(
         canvas = _paste_with_alpha(canvas, person1_scaled, p1_left, p1_top)
         canvas = _paste_with_alpha(canvas, person2_scaled, p2_left, p2_top)
 
-    # Step 8: Output
+    # Step 8: Server-side crop (if requested)
+    if crop:
+        x1 = max(0.0, min(1.0, crop.get("x1", 0)))
+        y1 = max(0.0, min(1.0, crop.get("y1", 0)))
+        x2 = max(0.0, min(1.0, crop.get("x2", 1)))
+        y2 = max(0.0, min(1.0, crop.get("y2", 1)))
+        cx = int(x1 * canvas_width)
+        cy = int(y1 * canvas_height)
+        cw = max(1, int((x2 - x1) * canvas_width))
+        ch = max(1, int((y2 - y1) * canvas_height))
+        canvas = canvas.crop((cx, cy, cx + cw, cy + ch))
+
+    # Step 9: Output
     if preview_mode:
         # Scale down proportionally for preview, max 768px on longest side
         max_preview = 768
@@ -177,7 +190,7 @@ def merge_images(
             output_image = image_to_base64(canvas, fmt="JPEG", quality=95)
         else:
             output_image = image_to_base64(canvas, fmt="PNG")
-        output_size = (canvas_width, canvas_height)
+        output_size = canvas.size
 
     processing_time_ms = int((time.time() - start_time) * 1000)
 

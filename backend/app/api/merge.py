@@ -48,7 +48,7 @@ async def merge(request: MergeRequest) -> MergeResponse | JSONResponse:
     # Execute merge pipeline
     try:
         merged_base64, processing_time_ms, output_size = merge_images(
-            seg1, seg2, request.settings, request.preview_mode, request.output_format
+            seg1, seg2, request.settings, request.preview_mode, request.output_format, request.crop
         )
     except Exception as e:
         logger.error(f"Merge failed: {e}")

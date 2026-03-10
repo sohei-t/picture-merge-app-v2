@@ -2,6 +2,13 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { MergeSettings, MergeResponse, AppError } from "../types/index.ts";
 import { mergeImages } from "../api/client.ts";
 
+interface CropRegion {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 interface UseMergeReturn {
   previewImage: string | null;
   isLoading: boolean;
@@ -9,7 +16,7 @@ interface UseMergeReturn {
   processingTimeMs: number | null;
   fetchPreview: (image1Id: string, image2Id: string, settings: MergeSettings) => void;
   fetchFullResolution: (image1Id: string, image2Id: string, settings: MergeSettings) => Promise<MergeResponse>;
-  fetchForCrop: (image1Id: string, image2Id: string, settings: MergeSettings) => Promise<MergeResponse>;
+  fetchCropped: (image1Id: string, image2Id: string, settings: MergeSettings, crop: CropRegion) => Promise<MergeResponse>;
   reset: () => void;
 }
 
@@ -107,12 +114,15 @@ export function useMerge(): UseMergeReturn {
     []
   );
 
-  const fetchForCrop = useCallback(
-    async (image1Id: string, image2Id: string, settings: MergeSettings): Promise<MergeResponse> => {
+  const fetchCropped = useCallback(
+    async (image1Id: string, image2Id: string, settings: MergeSettings, crop: CropRegion): Promise<MergeResponse> => {
       setIsLoading(true);
       setError(null);
       try {
-        const request = buildRequest(image1Id, image2Id, settings, false, "JPEG");
+        const request = {
+          ...buildRequest(image1Id, image2Id, settings, false, "PNG"),
+          crop: { x1: crop.x1, y1: crop.y1, x2: crop.x2, y2: crop.y2 },
+        };
         const response = await mergeImages(request);
         setProcessingTimeMs(response.processing_time_ms);
         return response;
@@ -136,5 +146,5 @@ export function useMerge(): UseMergeReturn {
     setProcessingTimeMs(null);
   }, []);
 
-  return { previewImage, isLoading, error, processingTimeMs, fetchPreview, fetchFullResolution, fetchForCrop, reset };
+  return { previewImage, isLoading, error, processingTimeMs, fetchPreview, fetchFullResolution, fetchCropped, reset };
 }

@@ -76,7 +76,7 @@ export interface ShadowSettings {
   intensity: number;
 }
 
-export type OutputPreset = "square" | "landscape" | "portrait" | "custom";
+export type OutputPreset = "video" | "square" | "landscape" | "portrait" | "custom";
 
 export interface OutputSize {
   width: number;
@@ -122,6 +122,7 @@ export interface MergeRequest {
     layer_order: string;
   };
   preview_mode: boolean;
+  output_format?: "PNG" | "JPEG";
 }
 
 // ===== App Error =====
@@ -134,6 +135,7 @@ export interface AppError {
 
 // ===== Output Size Presets =====
 export const OUTPUT_PRESETS: Record<OutputPreset, { width: number; height: number; label: string }> = {
+  video:     { width: 1440, height: 2559, label: "動画用 480:853 (1440x2559)" },
   square:    { width: 2048, height: 2048, label: "正方形 (2048x2048)" },
   landscape: { width: 1920, height: 1080, label: "横長 16:9 (1920x1080)" },
   portrait:  { width: 1080, height: 1920, label: "縦長 9:16 (1080x1920)" },
@@ -143,7 +145,7 @@ export const OUTPUT_PRESETS: Record<OutputPreset, { width: number; height: numbe
 // ===== Default Settings =====
 export const DEFAULT_MERGE_SETTINGS: MergeSettings = {
   backgroundColor: "#FFFFFF",
-  outputSize: { width: 2048, height: 2048, preset: "square" },
+  outputSize: { width: 1440, height: 2559, preset: "video" },
   person1: { x: 0.3, yOffset: 0, scale: 1.0 },
   person2: { x: 0.7, yOffset: 0, scale: 1.0 },
   shadow: { enabled: true, intensity: 0.5 },

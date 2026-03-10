@@ -49,6 +49,7 @@ def merge_images(
     seg2: SegmentedOutput,
     settings: MergeSettingsModel,
     preview_mode: bool = False,
+    output_format: str = "PNG",
 ) -> tuple[str, int, tuple[int, int]]:
     """Execute the merge pipeline.
 
@@ -171,7 +172,11 @@ def merge_images(
         output_image = image_to_base64(canvas, fmt="JPEG", quality=80)
         output_size = (preview_w, preview_h)
     else:
-        output_image = image_to_base64(canvas, fmt="PNG")
+        fmt = output_format.upper() if output_format else "PNG"
+        if fmt == "JPEG":
+            output_image = image_to_base64(canvas, fmt="JPEG", quality=95)
+        else:
+            output_image = image_to_base64(canvas, fmt="PNG")
         output_size = (canvas_width, canvas_height)
 
     processing_time_ms = int((time.time() - start_time) * 1000)

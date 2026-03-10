@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { AppPhase, MergeSettings, AppError } from "./types/index.ts";
 import { DEFAULT_MERGE_SETTINGS } from "./types/index.ts";
 import { healthCheck } from "./api/client.ts";
@@ -200,6 +200,70 @@ function App() {
     ),
   });
 
+  // ===== Compute person highlight positions for canvas overlay =====
+  const person1Highlight = useMemo(() => {
+    if (!segmentation.person1) return null;
+    const bbox = segmentation.person1.bbox;
+    const outW = settings.outputSize.width;
+    const outH = settings.outputSize.height;
+    const targetHeight = outH * 0.7;
+    const scale = bbox.height > 0 ? (targetHeight / bbox.height) * settings.person1.scale : settings.person1.scale;
+    const personW = bbox.width * scale;
+    const personH = bbox.height * scale;
+    const footLineY = outH * 0.8;
+    const footRel = (segmentation.person1.footY - bbox.y) * scale;
+    const topY = footLineY - footRel + settings.person1.yOffset;
+    // Convert to preview ratio coordinates
+    const previewMaxDim = 768;
+    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
+    return {
+      centerX: settings.person1.x,
+      topY: topY * ratio,
+      width: personW * ratio,
+      height: personH * ratio,
+    };
+  }, [segmentation.person1, settings]);
+
+  const person2Highlight = useMemo(() => {
+    if (!segmentation.person1 || !segmentation.person2) return null;
+    const bbox1 = segmentation.person1.bbox;
+    const bbox2 = segmentation.person2.bbox;
+    const outW = settings.outputSize.width;
+    const outH = settings.outputSize.height;
+    const targetHeight = outH * 0.7;
+    // Auto scale ratio (same as backend)
+    const p1H = bbox1.height;
+    const p2H = bbox2.height;
+    const autoRatio = p2H === 0 ? 1.0 : Math.max(0.8, Math.min(1.2, p1H / p2H));
+    const scale = p2H > 0 ? (targetHeight / p2H) * autoRatio * settings.person2.scale : settings.person2.scale;
+    const personW = bbox2.width * scale;
+    const personH = bbox2.height * scale;
+    const footLineY = outH * 0.8;
+    const footRel = (segmentation.person2.footY - bbox2.y) * scale;
+    const topY = footLineY - footRel + settings.person2.yOffset;
+    const previewMaxDim = 768;
+    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
+    return {
+      centerX: settings.person2.x,
+      topY: topY * ratio,
+      width: personW * ratio,
+      height: personH * ratio,
+    };
+  }, [segmentation.person1, segmentation.person2, settings]);
+
+  // ===== Crop with full resolution =====
+  const handleCropExecute = useCallback(() => {
+    if (!segmentation.person1 || !segmentation.person2) return;
+    crop.executeCropFromFull(async () => {
+      const response = await merge.fetchForCrop(
+        segmentation.person1!.id,
+        segmentation.person2!.id,
+        settings
+      );
+      return response.merged_image;
+    });
+  }, [segmentation.person1, segmentation.person2, settings, merge, crop]);
+
   // ===== Determine if controls should be disabled =====
   const isProcessing = segmentation.isProcessing || merge.isLoading;
   const canEdit = phase === "PREVIEW" || phase === "COMPLETE";
@@ -257,6 +321,9 @@ function App() {
                 isLoading={merge.isLoading}
                 isCropMode={crop.isCropMode}
                 cropRect={crop.cropRect}
+                selectedPerson={drag.selectedPerson}
+                person1Highlight={person1Highlight}
+                person2Highlight={person2Highlight}
                 onMouseDown={
                   canEdit
                     ? crop.isCropMode
@@ -296,13 +363,10 @@ function App() {
                 onReset={handleReset}
                 isMerging={merge.isLoading}
                 isCropMode={crop.isCropMode}
+                isCropping={crop.isCropping}
                 hasCropRect={!!crop.cropRect}
                 onCropToggle={crop.isCropMode ? crop.disableCropMode : crop.enableCropMode}
-                onCropExecute={
-                  merge.previewImage
-                    ? () => crop.executeCrop(merge.previewImage!)
-                    : undefined
-                }
+                onCropExecute={handleCropExecute}
               />
             </div>
           </div>

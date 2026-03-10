@@ -11,12 +11,14 @@ interface UseCropModeReturn {
   isCropMode: boolean;
   cropRect: CropRect | null;
   isDrawing: boolean;
+  isCropping: boolean;
   enableCropMode: () => void;
   disableCropMode: () => void;
   handleCropMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCropMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCropMouseUp: () => void;
-  executeCrop: (previewImage: string) => void;
+  executeCrop: (fullResImage: string) => void;
+  executeCropFromFull: (fetchFullRes: () => Promise<string>) => void;
   resetCrop: () => void;
 }
 
@@ -24,6 +26,7 @@ export function useCropMode(): UseCropModeReturn {
   const [isCropMode, setIsCropMode] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
   const drawingRef = useRef(false);
 
   const enableCropMode = useCallback(() => {
@@ -80,8 +83,8 @@ export function useCropMode(): UseCropModeReturn {
     drawingRef.current = false;
   }, []);
 
-  const executeCrop = useCallback(
-    (previewImage: string) => {
+  const cropFromImage = useCallback(
+    (imageDataUrl: string) => {
       if (!cropRect) return;
 
       const img = new Image();
@@ -109,7 +112,7 @@ export function useCropMode(): UseCropModeReturn {
         const dataUrl = canvas.toDataURL("image/png");
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const filename = `cropped_${timestamp}.png`;
+        const filename = `cropped_${sw}x${sh}_${timestamp}.png`;
 
         const blob = dataURLToBlob(dataUrl);
         const url = URL.createObjectURL(blob);
@@ -120,22 +123,49 @@ export function useCropMode(): UseCropModeReturn {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        setIsCropping(false);
       };
-      img.src = previewImage;
+      img.src = imageDataUrl;
     },
     [cropRect]
+  );
+
+  // Crop from a provided image (legacy/fallback)
+  const executeCrop = useCallback(
+    (imageDataUrl: string) => {
+      cropFromImage(imageDataUrl);
+    },
+    [cropFromImage]
+  );
+
+  // Crop from full resolution: fetch full-res first, then crop
+  const executeCropFromFull = useCallback(
+    async (fetchFullRes: () => Promise<string>) => {
+      if (!cropRect) return;
+      setIsCropping(true);
+      try {
+        const fullResImage = await fetchFullRes();
+        cropFromImage(fullResImage);
+      } catch {
+        setIsCropping(false);
+      }
+    },
+    [cropRect, cropFromImage]
   );
 
   return {
     isCropMode,
     cropRect,
     isDrawing,
+    isCropping,
     enableCropMode,
     disableCropMode,
     handleCropMouseDown,
     handleCropMouseMove,
     handleCropMouseUp,
     executeCrop,
+    executeCropFromFull,
     resetCrop,
   };
 }

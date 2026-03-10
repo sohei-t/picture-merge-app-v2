@@ -25,10 +25,14 @@ interface UseCanvasDragProps {
 
 interface UseCanvasDragReturn {
   dragState: DragState;
+  selectedPerson: "person1" | "person2" | null;
   handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseUp: () => void;
+  clearSelection: () => void;
 }
+
+const CLICK_THRESHOLD = 5; // pixels - below this is a click, not a drag
 
 export function useCanvasDrag({
   person1Bbox,
@@ -50,8 +54,10 @@ export function useCanvasDrag({
     dragStartY: 0,
     dragCurrentY: 0,
   });
+  const [selectedPerson, setSelectedPerson] = useState<"person1" | "person2" | null>(null);
 
   const canvasRef = useRef<DOMRect | null>(null);
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
 
   const getCanvasPos = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
@@ -91,6 +97,7 @@ export function useCanvasDrag({
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const pos = getCanvasPos(e);
       const target = hitTest(pos.x);
+      mouseDownPos.current = { x: e.clientX, y: e.clientY };
       if (target) {
         setDragState({
           isDragging: true,
@@ -114,27 +121,63 @@ export function useCanvasDrag({
     [dragState.isDragging, getCanvasPos]
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (!dragState.isDragging || !dragState.dragTarget) return;
+  const handleMouseUp = useCallback(
+    (e?: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!dragState.isDragging || !dragState.dragTarget) {
+        // Click on empty area - deselect
+        if (mouseDownPos.current && e) {
+          const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+          const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+          if (dx < CLICK_THRESHOLD && dy < CLICK_THRESHOLD) {
+            setSelectedPerson(null);
+          }
+        }
+        mouseDownPos.current = null;
+        return;
+      }
 
-    const deltaX = dragState.dragCurrentX - dragState.dragStartX;
-    const deltaY = dragState.dragCurrentY - dragState.dragStartY;
-    const currentX = dragState.dragTarget === "person1" ? person1X : person2X;
-    const currentYOffset = dragState.dragTarget === "person1" ? person1YOffset : person2YOffset;
-    const newX = Math.max(0, Math.min(1, currentX + deltaX / outputWidth));
-    const newYOffset = Math.max(-500, Math.min(500, currentYOffset + deltaY));
+      const deltaX = dragState.dragCurrentX - dragState.dragStartX;
+      const deltaY = dragState.dragCurrentY - dragState.dragStartY;
 
-    onDragEnd(dragState.dragTarget, newX, newYOffset);
+      // Check if this was a click (minimal movement) vs a drag
+      const pixelDeltaX = mouseDownPos.current && e
+        ? Math.abs(e.clientX - mouseDownPos.current.x)
+        : Math.abs(deltaX);
+      const pixelDeltaY = mouseDownPos.current && e
+        ? Math.abs(e.clientY - mouseDownPos.current.y)
+        : Math.abs(deltaY);
 
-    setDragState({
-      isDragging: false,
-      dragTarget: null,
-      dragStartX: 0,
-      dragCurrentX: 0,
-      dragStartY: 0,
-      dragCurrentY: 0,
-    });
-  }, [dragState, person1X, person2X, person1YOffset, person2YOffset, outputWidth, onDragEnd]);
+      if (pixelDeltaX < CLICK_THRESHOLD && pixelDeltaY < CLICK_THRESHOLD) {
+        // This was a click - toggle selection
+        setSelectedPerson((prev) =>
+          prev === dragState.dragTarget ? null : dragState.dragTarget
+        );
+      } else {
+        // This was a drag - update position and keep selected
+        const currentX = dragState.dragTarget === "person1" ? person1X : person2X;
+        const currentYOffset = dragState.dragTarget === "person1" ? person1YOffset : person2YOffset;
+        const newX = Math.max(0, Math.min(1, currentX + deltaX / outputWidth));
+        const newYOffset = Math.max(-500, Math.min(500, currentYOffset + deltaY));
+        onDragEnd(dragState.dragTarget, newX, newYOffset);
+        setSelectedPerson(dragState.dragTarget);
+      }
 
-  return { dragState, handleMouseDown, handleMouseMove, handleMouseUp };
+      mouseDownPos.current = null;
+      setDragState({
+        isDragging: false,
+        dragTarget: null,
+        dragStartX: 0,
+        dragCurrentX: 0,
+        dragStartY: 0,
+        dragCurrentY: 0,
+      });
+    },
+    [dragState, person1X, person2X, person1YOffset, person2YOffset, outputWidth, onDragEnd]
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelectedPerson(null);
+  }, []);
+
+  return { dragState, selectedPerson, handleMouseDown, handleMouseMove, handleMouseUp, clearSelection };
 }

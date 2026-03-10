@@ -6,6 +6,7 @@ interface DownloadButtonProps {
   onReset: () => void;
   isMerging: boolean;
   isCropMode?: boolean;
+  isCropping?: boolean;
   hasCropRect?: boolean;
   onCropToggle?: () => void;
   onCropExecute?: () => void;
@@ -17,6 +18,7 @@ export function DownloadButton({
   onReset,
   isMerging,
   isCropMode,
+  isCropping,
   hasCropRect,
   onCropToggle,
   onCropExecute,
@@ -67,9 +69,23 @@ export function DownloadButton({
           {isCropMode && hasCropRect && onCropExecute && (
             <button
               onClick={onCropExecute}
-              className="px-4 py-2.5 rounded-lg font-medium text-sm bg-green-600 text-white hover:bg-green-700 transition-colors"
+              disabled={isCropping}
+              className={`
+                px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
+                ${isCropping
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700"
+                }
+              `}
             >
-              切り出しダウンロード
+              {isCropping ? (
+                <>
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1" />
+                  高解像度で切り出し中...
+                </>
+              ) : (
+                "切り出しダウンロード（高解像度）"
+              )}
             </button>
           )}
         </>

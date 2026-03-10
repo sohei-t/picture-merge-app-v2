@@ -24,7 +24,9 @@ class TestMergeEndpointSuccess:
         assert response.status_code == 200
         data = response.json()
         assert data["merged_image"].startswith("data:image/jpeg;base64,")
-        assert data["output_size"]["width"] == 768
+        # Preview: proportional max 768px on longest side
+        # 1440x2559 → ratio=768/2559 → 432x768
+        assert data["output_size"]["width"] == 432
         assert data["output_size"]["height"] == 768
         assert data["processing_time_ms"] >= 0
 
@@ -42,8 +44,8 @@ class TestMergeEndpointSuccess:
         assert response.status_code == 200
         data = response.json()
         assert data["merged_image"].startswith("data:image/png;base64,")
-        assert data["output_size"]["width"] == 2048
-        assert data["output_size"]["height"] == 2048
+        assert data["output_size"]["width"] == 1440
+        assert data["output_size"]["height"] == 2559
 
     def test_default_settings(self, client, segmented_pair):
         """BE-MRG-003: Merge with default settings."""
@@ -54,8 +56,8 @@ class TestMergeEndpointSuccess:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["output_size"]["width"] == 2048
-        assert data["output_size"]["height"] == 2048
+        assert data["output_size"]["width"] == 1440
+        assert data["output_size"]["height"] == 2559
 
     def test_background_color(self, client, segmented_pair):
         """BE-MRG-004: Background color is applied."""

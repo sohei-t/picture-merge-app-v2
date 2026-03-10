@@ -9,6 +9,7 @@ interface UseMergeReturn {
   processingTimeMs: number | null;
   fetchPreview: (image1Id: string, image2Id: string, settings: MergeSettings) => void;
   fetchFullResolution: (image1Id: string, image2Id: string, settings: MergeSettings) => Promise<MergeResponse>;
+  fetchForCrop: (image1Id: string, image2Id: string, settings: MergeSettings) => Promise<MergeResponse>;
   reset: () => void;
 }
 
@@ -16,7 +17,8 @@ function buildRequest(
   image1Id: string,
   image2Id: string,
   settings: MergeSettings,
-  previewMode: boolean
+  previewMode: boolean,
+  outputFormat: "PNG" | "JPEG" = "PNG",
 ) {
   return {
     image1_id: image1Id,
@@ -43,6 +45,7 @@ function buildRequest(
       layer_order: settings.layerOrder,
     },
     preview_mode: previewMode,
+    output_format: outputFormat,
   };
 }
 
@@ -104,6 +107,25 @@ export function useMerge(): UseMergeReturn {
     []
   );
 
+  const fetchForCrop = useCallback(
+    async (image1Id: string, image2Id: string, settings: MergeSettings): Promise<MergeResponse> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const request = buildRequest(image1Id, image2Id, settings, false, "JPEG");
+        const response = await mergeImages(request);
+        setProcessingTimeMs(response.processing_time_ms);
+        return response;
+      } catch (err) {
+        setError(err as AppError);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
@@ -114,5 +136,5 @@ export function useMerge(): UseMergeReturn {
     setProcessingTimeMs(null);
   }, []);
 
-  return { previewImage, isLoading, error, processingTimeMs, fetchPreview, fetchFullResolution, reset };
+  return { previewImage, isLoading, error, processingTimeMs, fetchPreview, fetchFullResolution, fetchForCrop, reset };
 }

@@ -1,14 +1,24 @@
 import { useRef, useEffect } from "react";
 import type { CropRect } from "../hooks/useCropMode.ts";
 
+interface PersonHighlight {
+  centerX: number; // 0-1 ratio
+  topY: number;    // pixel offset from canvas top (in output coords)
+  width: number;   // pixel width (in output coords)
+  height: number;  // pixel height (in output coords)
+}
+
 interface PreviewCanvasProps {
   previewImage: string | null;
   isLoading: boolean;
   isCropMode?: boolean;
   cropRect?: CropRect | null;
+  selectedPerson?: "person1" | "person2" | null;
+  person1Highlight?: PersonHighlight | null;
+  person2Highlight?: PersonHighlight | null;
   onMouseDown?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseMove?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
-  onMouseUp?: () => void;
+  onMouseUp?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
 }
 
 export function PreviewCanvas({
@@ -16,6 +26,9 @@ export function PreviewCanvas({
   isLoading,
   isCropMode,
   cropRect,
+  selectedPerson,
+  person1Highlight,
+  person2Highlight,
   onMouseDown,
   onMouseMove,
   onMouseUp,
@@ -48,22 +61,22 @@ export function PreviewCanvas({
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
       imageRef.current = img;
-      drawCropOverlay(ctx, canvas.width, canvas.height, cropRect);
+      drawOverlays(ctx, canvas.width, canvas.height, cropRect, selectedPerson, person1Highlight, person2Highlight);
     };
     img.src = previewImage;
-  }, [previewImage, cropRect]);
+  }, [previewImage, cropRect, selectedPerson, person1Highlight, person2Highlight]);
 
-  // Redraw crop overlay when cropRect changes without reloading image
+  // Redraw overlays when they change without reloading image
   useEffect(() => {
-    if (!cropRect || !imageRef.current) return;
+    if (!imageRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.drawImage(imageRef.current, 0, 0);
-    drawCropOverlay(ctx, canvas.width, canvas.height, cropRect);
-  }, [cropRect]);
+    drawOverlays(ctx, canvas.width, canvas.height, cropRect, selectedPerson, person1Highlight, person2Highlight);
+  }, [cropRect, selectedPerson, person1Highlight, person2Highlight]);
 
   const cursor = isCropMode ? "crosshair" : onMouseDown ? "grab" : "default";
 
@@ -76,7 +89,7 @@ export function PreviewCanvas({
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
+        onMouseLeave={onMouseUp as (() => void) | undefined}
       />
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg">
@@ -88,18 +101,143 @@ export function PreviewCanvas({
           トリミングモード：範囲をドラッグで選択
         </div>
       )}
+      {selectedPerson && !isCropMode && (
+        <div className="absolute top-2 left-2 bg-cyan-600 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-cyan-300 animate-pulse" />
+          {selectedPerson === "person1" ? "人物1" : "人物2"} を選択中
+        </div>
+      )}
     </div>
   );
+}
+
+function drawOverlays(
+  ctx: CanvasRenderingContext2D,
+  canvasW: number,
+  canvasH: number,
+  cropRect: CropRect | null | undefined,
+  selectedPerson: "person1" | "person2" | null | undefined,
+  person1Highlight: PersonHighlight | null | undefined,
+  person2Highlight: PersonHighlight | null | undefined,
+) {
+  // Draw selection highlight
+  if (selectedPerson && !cropRect) {
+    const hl = selectedPerson === "person1" ? person1Highlight : person2Highlight;
+    if (hl) {
+      drawSelectionGlow(ctx, canvasW, canvasH, hl);
+    }
+  }
+
+  // Draw crop overlay
+  if (cropRect) {
+    drawCropOverlay(ctx, canvasW, canvasH, cropRect);
+  }
+}
+
+function drawSelectionGlow(
+  ctx: CanvasRenderingContext2D,
+  canvasW: number,
+  canvasH: number,
+  hl: PersonHighlight,
+) {
+  // Scale highlight coords from output space to canvas (preview) space
+  // We don't know the exact output dimensions, but highlight values are in ratio/output coords
+  // centerX is 0-1 ratio, others are in output pixels
+  // We need to map to canvas pixels
+  const cx = hl.centerX * canvasW;
+  const halfW = (hl.width / 2) * (canvasW / canvasW); // already in proportional space via caller
+  const x = cx - halfW;
+  const y = hl.topY;
+  const w = hl.width;
+  const h = hl.height;
+
+  // Outer glow
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 200, 255, 0.8)";
+  ctx.shadowBlur = 20;
+  ctx.strokeStyle = "rgba(0, 200, 255, 0.7)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+
+  // Draw rounded rect glow
+  const pad = 6;
+  const rx = x - pad;
+  const ry = y - pad;
+  const rw = w + pad * 2;
+  const rh = h + pad * 2;
+  const radius = 8;
+  drawRoundedRect(ctx, rx, ry, rw, rh, radius);
+  ctx.stroke();
+
+  // Second pass for stronger glow
+  ctx.shadowBlur = 10;
+  ctx.strokeStyle = "rgba(0, 220, 255, 0.4)";
+  ctx.lineWidth = 6;
+  drawRoundedRect(ctx, rx - 2, ry - 2, rw + 4, rh + 4, radius + 2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Corner markers
+  ctx.save();
+  ctx.strokeStyle = "rgba(0, 220, 255, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  const markerLen = Math.min(20, rw / 4, rh / 4);
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(rx, ry + markerLen);
+  ctx.lineTo(rx, ry);
+  ctx.lineTo(rx + markerLen, ry);
+  ctx.stroke();
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(rx + rw - markerLen, ry);
+  ctx.lineTo(rx + rw, ry);
+  ctx.lineTo(rx + rw, ry + markerLen);
+  ctx.stroke();
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(rx, ry + rh - markerLen);
+  ctx.lineTo(rx, ry + rh);
+  ctx.lineTo(rx + markerLen, ry + rh);
+  ctx.stroke();
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(rx + rw - markerLen, ry + rh);
+  ctx.lineTo(rx + rw, ry + rh);
+  ctx.lineTo(rx + rw, ry + rh - markerLen);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 function drawCropOverlay(
   ctx: CanvasRenderingContext2D,
   canvasW: number,
   canvasH: number,
-  cropRect: CropRect | null | undefined
+  cropRect: CropRect,
 ) {
-  if (!cropRect) return;
-
   const x1 = Math.min(cropRect.startX, cropRect.endX) * canvasW;
   const y1 = Math.min(cropRect.startY, cropRect.endY) * canvasH;
   const x2 = Math.max(cropRect.startX, cropRect.endX) * canvasW;

@@ -66,10 +66,10 @@ class MergeSettingsModel(BaseModel):
         description="Background color (hex)",
     )
     output_width: int = Field(
-        default=2048, ge=64, le=4096, description="Output width (px)"
+        default=1440, ge=64, le=4096, description="Output width (px)"
     )
     output_height: int = Field(
-        default=2048, ge=64, le=4096, description="Output height (px)"
+        default=2559, ge=64, le=4096, description="Output height (px)"
     )
     person1: PersonSettingsModel = Field(
         default_factory=lambda: PersonSettingsModel(x=0.3)
@@ -93,7 +93,12 @@ class MergeRequest(BaseModel):
     image2_id: str = Field(..., description="Person 2 segmentation result ID")
     settings: MergeSettingsModel = Field(default_factory=MergeSettingsModel)
     preview_mode: bool = Field(
-        default=False, description="Preview mode (512x512 JPEG)"
+        default=False, description="Preview mode (scaled JPEG)"
+    )
+    output_format: str = Field(
+        default="PNG",
+        pattern=r"^(PNG|JPEG)$",
+        description="Output format: PNG (lossless) or JPEG (fast)",
     )
 
 

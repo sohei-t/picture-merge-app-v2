@@ -7,6 +7,7 @@ import { useSegmentation } from "./hooks/useSegmentation.ts";
 import { useMerge } from "./hooks/useMerge.ts";
 import { useCanvasDrag } from "./hooks/useCanvasDrag.ts";
 import { useCropMode } from "./hooks/useCropMode.ts";
+import { useEraser } from "./hooks/useEraser.ts";
 import { Header } from "./components/Header.tsx";
 import { ImageDropzone } from "./components/ImageDropzone.tsx";
 import { SegmentedPreview } from "./components/SegmentedPreview.tsx";
@@ -14,6 +15,7 @@ import { SettingsPanel } from "./components/SettingsPanel.tsx";
 import { PreviewCanvas } from "./components/PreviewCanvas.tsx";
 import { DownloadButton } from "./components/DownloadButton.tsx";
 import { StatusIndicator } from "./components/StatusIndicator.tsx";
+import { EraserPanel } from "./components/EraserPanel.tsx";
 
 function App() {
   // ===== Server connection =====
@@ -48,9 +50,10 @@ function App() {
   const segmentation = useSegmentation();
   const merge = useMerge();
   const crop = useCropMode();
+  const eraser = useEraser();
 
   // ===== Derived error =====
-  const displayError = appError ?? segmentation.error ?? merge.error;
+  const displayError = appError ?? segmentation.error ?? merge.error ?? eraser.error;
 
   // ===== File handlers =====
   const handleFile1 = useCallback(
@@ -59,6 +62,7 @@ function App() {
       setAppError(null);
       merge.reset();
       crop.disableCropMode();
+      eraser.close();
       if (file2) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file, file2).then(() => {
@@ -71,7 +75,7 @@ function App() {
         segmentation.segmentOne("person1", file).catch(() => {});
       }
     },
-    [file2, segmentation, merge, crop]
+    [file2, segmentation, merge, crop, eraser]
   );
 
   const handleFile2 = useCallback(
@@ -80,6 +84,7 @@ function App() {
       setAppError(null);
       merge.reset();
       crop.disableCropMode();
+      eraser.close();
       if (file1) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file1, file).then(() => {
@@ -92,7 +97,7 @@ function App() {
         segmentation.segmentOne("person2", file).catch(() => {});
       }
     },
-    [file1, segmentation, merge, crop]
+    [file1, segmentation, merge, crop, eraser]
   );
 
   // ===== Per-person clear =====
@@ -101,16 +106,18 @@ function App() {
     segmentation.clearPerson("person1");
     merge.reset();
     crop.disableCropMode();
+    eraser.close();
     setPhase(file2 ? "ONE_UPLOADED" : "IDLE");
-  }, [file2, segmentation, merge, crop]);
+  }, [file2, segmentation, merge, crop, eraser]);
 
   const handleClear2 = useCallback(() => {
     setFile2(null);
     segmentation.clearPerson("person2");
     merge.reset();
     crop.disableCropMode();
+    eraser.close();
     setPhase(file1 ? "ONE_UPLOADED" : "IDLE");
-  }, [file1, segmentation, merge, crop]);
+  }, [file1, segmentation, merge, crop, eraser]);
 
   const handleFileError = useCallback((message: string) => {
     setAppError({
@@ -172,7 +179,79 @@ function App() {
     setAppError(null);
     segmentation.reset();
     merge.reset();
-  }, [segmentation, merge]);
+    eraser.close();
+  }, [segmentation, merge, eraser]);
+
+  // ===== Eraser handlers =====
+  const handleEraserOpen = useCallback(
+    (target: "person1" | "person2") => {
+      const person = target === "person1" ? segmentation.person1 : segmentation.person2;
+      if (!person) return;
+      eraser.startAutoDetect(target, person.id);
+    },
+    [segmentation.person1, segmentation.person2, eraser]
+  );
+
+  const handleEraseRegions = useCallback(
+    async (regionIds: number[]) => {
+      if (!eraser.target) return;
+      const person = eraser.target === "person1" ? segmentation.person1 : segmentation.person2;
+      if (!person) return;
+
+      const result = await eraser.eraseSelectedRegions(person.id, regionIds);
+      if (result) {
+        segmentation.updatePerson(eraser.target, {
+          segmentedImage: result.segmentedImage,
+          bbox: result.bbox,
+          footY: result.footY,
+        });
+        // Refresh preview
+        if (segmentation.person1 && segmentation.person2) {
+          merge.fetchPreview(
+            segmentation.person1.id,
+            segmentation.person2.id,
+            settings
+          );
+        }
+      }
+    },
+    [eraser, segmentation, merge, settings]
+  );
+
+  const handleBrushApply = useCallback(
+    async (
+      strokes: { x: number; y: number; radius: number }[],
+      displayWidth: number,
+      displayHeight: number
+    ) => {
+      if (!eraser.target) return;
+      const person = eraser.target === "person1" ? segmentation.person1 : segmentation.person2;
+      if (!person) return;
+
+      const result = await eraser.sendBrushStrokes(
+        person.id,
+        strokes,
+        displayWidth,
+        displayHeight
+      );
+      if (result) {
+        segmentation.updatePerson(eraser.target, {
+          segmentedImage: result.segmentedImage,
+          bbox: result.bbox,
+          footY: result.footY,
+        });
+        // Refresh preview
+        if (segmentation.person1 && segmentation.person2) {
+          merge.fetchPreview(
+            segmentation.person1.id,
+            segmentation.person2.id,
+            settings
+          );
+        }
+      }
+    },
+    [eraser, segmentation, merge, settings]
+  );
 
   // ===== Compute person highlight positions for canvas overlay =====
   const person1Highlight = useMemo(() => {
@@ -282,6 +361,9 @@ function App() {
   const isProcessing = segmentation.isProcessing || merge.isLoading;
   const canEdit = phase === "PREVIEW" || phase === "COMPLETE";
 
+  // Get the active eraser person
+  const eraserPerson = eraser.target === "person1" ? segmentation.person1 : eraser.target === "person2" ? segmentation.person2 : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header serverConnected={isServerConnected} />
@@ -314,8 +396,38 @@ function App() {
               <SegmentedPreview
                 person1={segmentation.person1}
                 person2={segmentation.person2}
+                onErase={canEdit ? handleEraserOpen : undefined}
+                eraserActive={eraser.target}
               />
             </div>
+
+            {/* Eraser Panel */}
+            {eraser.mode !== "off" && (
+              <div className="bg-white rounded-xl shadow-sm p-4">
+                <EraserPanel
+                  mode={eraser.mode}
+                  target={eraser.target}
+                  person={eraserPerson}
+                  regions={eraser.regions}
+                  isDetecting={eraser.isDetecting}
+                  isErasing={eraser.isErasing}
+                  brushSize={eraser.brushSize}
+                  onBrushSizeChange={eraser.setBrushSize}
+                  onAutoDetect={() => {
+                    if (eraser.target) {
+                      const p = eraser.target === "person1" ? segmentation.person1 : segmentation.person2;
+                      if (p) eraser.startAutoDetect(eraser.target, p.id);
+                    }
+                  }}
+                  onBrushMode={() => {
+                    if (eraser.target) eraser.startBrushMode(eraser.target);
+                  }}
+                  onEraseRegions={handleEraseRegions}
+                  onBrushApply={handleBrushApply}
+                  onClose={eraser.close}
+                />
+              </div>
+            )}
 
             <div className="bg-white rounded-xl shadow-sm p-4">
               <StatusIndicator

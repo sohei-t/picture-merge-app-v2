@@ -3,6 +3,8 @@ import type {
   MergeResponse,
   MergeRequest,
   HealthResponse,
+  DetectRegionsResponse,
+  EraseResponse,
   AppError,
   ApiError,
 } from "../types/index.ts";
@@ -118,6 +120,74 @@ export async function mergeImages(request: MergeRequest): Promise<MergeResponse>
   }
 
   return handleResponse<MergeResponse>(response);
+}
+
+export async function detectRegions(segId: string): Promise<DetectRegionsResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/detect-regions/${segId}`, {
+      method: "POST",
+    });
+  } catch {
+    throw {
+      type: "network",
+      message: "サーバーに接続できません。起動を確認してください。",
+      retryable: true,
+    } satisfies AppError;
+  }
+
+  return handleResponse<DetectRegionsResponse>(response);
+}
+
+export async function eraseRegions(
+  segId: string,
+  regionIds: number[]
+): Promise<EraseResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/erase-regions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seg_id: segId, region_ids: regionIds }),
+    });
+  } catch {
+    throw {
+      type: "network",
+      message: "サーバーに接続できません。起動を確認してください。",
+      retryable: true,
+    } satisfies AppError;
+  }
+
+  return handleResponse<EraseResponse>(response);
+}
+
+export async function eraseManual(
+  segId: string,
+  strokes: { x: number; y: number; radius: number }[],
+  displayWidth: number,
+  displayHeight: number
+): Promise<EraseResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/erase-manual`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        seg_id: segId,
+        strokes,
+        display_width: displayWidth,
+        display_height: displayHeight,
+      }),
+    });
+  } catch {
+    throw {
+      type: "network",
+      message: "サーバーに接続できません。起動を確認してください。",
+      retryable: true,
+    } satisfies AppError;
+  }
+
+  return handleResponse<EraseResponse>(response);
 }
 
 export async function healthCheck(): Promise<HealthResponse> {

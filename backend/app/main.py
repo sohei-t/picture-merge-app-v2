@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.merge import router as merge_router
 from app.api.segment import router as segment_router
+from app.api.eraser import router as eraser_router
 from app.services.segmentation import preload_rembg
 
 logging.basicConfig(
@@ -50,3 +51,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(segment_router)
 app.include_router(merge_router)
+app.include_router(eraser_router)

@@ -135,6 +135,31 @@ export interface MergeRequest {
   crop?: { x1: number; y1: number; x2: number; y2: number };
 }
 
+// ===== Region Detection =====
+export interface DetectedRegion {
+  region_id: number;
+  bbox: BoundingBox;
+  area: number;
+  center: { x: number; y: number };
+  thumbnail: string;
+  is_main: boolean;
+}
+
+export interface DetectRegionsResponse {
+  seg_id: string;
+  region_count: number;
+  regions: DetectedRegion[];
+  processing_time_ms: number;
+}
+
+export interface EraseResponse {
+  seg_id: string;
+  segmented_image: string;
+  bbox: BoundingBox;
+  foot_y: number;
+  processing_time_ms: number;
+}
+
 // ===== App Error =====
 export interface AppError {
   type: "validation" | "network" | "segmentation" | "merge" | "unknown";

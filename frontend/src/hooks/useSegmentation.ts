@@ -10,6 +10,10 @@ interface UseSegmentationReturn {
   segmentBoth: (file1: File, file2: File) => Promise<void>;
   segmentOne: (target: "person1" | "person2", file: File) => Promise<void>;
   clearPerson: (target: "person1" | "person2") => void;
+  updatePerson: (
+    target: "person1" | "person2",
+    updates: { segmentedImage: string; bbox: { x: number; y: number; width: number; height: number }; footY: number }
+  ) => void;
   reset: () => void;
 }
 
@@ -75,6 +79,25 @@ export function useSegmentation(): UseSegmentationReturn {
     }
   }, []);
 
+  const updatePerson = useCallback(
+    (
+      target: "person1" | "person2",
+      updates: { segmentedImage: string; bbox: { x: number; y: number; width: number; height: number }; footY: number }
+    ) => {
+      const setter = target === "person1" ? setPerson1 : setPerson2;
+      setter((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          segmentedImage: updates.segmentedImage,
+          bbox: updates.bbox,
+          footY: updates.footY,
+        };
+      });
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     setPerson1(null);
     setPerson2(null);
@@ -82,5 +105,5 @@ export function useSegmentation(): UseSegmentationReturn {
     setIsProcessing(false);
   }, []);
 
-  return { person1, person2, isProcessing, error, segmentBoth, segmentOne, clearPerson, reset };
+  return { person1, person2, isProcessing, error, segmentBoth, segmentOne, clearPerson, updatePerson, reset };
 }

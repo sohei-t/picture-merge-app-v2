@@ -106,6 +106,19 @@ def merge_images(
     new_h2 = max(1, int(person2_img.height * scale2))
     person2_scaled = person2_img.resize((new_w2, new_h2), Image.LANCZOS)
 
+    # Step 3b: Apply rotation & flip transforms
+    person1_scaled = _apply_transforms(
+        person1_scaled, settings.person1.rotation,
+        settings.person1.flip_h, settings.person1.flip_v,
+    )
+    person2_scaled = _apply_transforms(
+        person2_scaled, settings.person2.rotation,
+        settings.person2.flip_h, settings.person2.flip_v,
+    )
+    # Update dimensions after transforms (rotation may change size)
+    new_w1, new_h1 = person1_scaled.size
+    new_w2, new_h2 = person2_scaled.size
+
     # Step 4: Position calculation
     foot_line_y = int(canvas_height * 0.8)
 
@@ -195,6 +208,33 @@ def merge_images(
     processing_time_ms = int((time.time() - start_time) * 1000)
 
     return output_image, processing_time_ms, output_size
+
+
+def _apply_transforms(
+    img: Image.Image,
+    rotation: float,
+    flip_h: bool,
+    flip_v: bool,
+) -> Image.Image:
+    """Apply rotation and flip transforms to a person image.
+
+    Args:
+        img: RGBA person image
+        rotation: Rotation angle in degrees (positive = counter-clockwise)
+        flip_h: Horizontal flip
+        flip_v: Vertical flip
+
+    Returns:
+        Transformed RGBA image
+    """
+    if flip_h:
+        img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    if flip_v:
+        img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    if rotation != 0:
+        # expand=True to avoid clipping corners; fillcolor transparent
+        img = img.rotate(rotation, expand=True, fillcolor=(0, 0, 0, 0), resample=Image.BICUBIC)
+    return img
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:

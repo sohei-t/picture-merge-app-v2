@@ -69,6 +69,9 @@ export interface PersonSettings {
   x: number;
   yOffset: number;
   scale: number;
+  rotation: number;
+  flipH: boolean;
+  flipV: boolean;
 }
 
 export interface ShadowSettings {
@@ -108,11 +111,17 @@ export interface MergeRequest {
       x: number;
       y_offset: number;
       scale: number;
+      rotation: number;
+      flip_h: boolean;
+      flip_v: boolean;
     };
     person2: {
       x: number;
       y_offset: number;
       scale: number;
+      rotation: number;
+      flip_h: boolean;
+      flip_v: boolean;
     };
     shadow: {
       enabled: boolean;
@@ -143,12 +152,16 @@ export const OUTPUT_PRESETS: Record<OutputPreset, { width: number; height: numbe
   custom:    { width: 2048, height: 2048, label: "カスタム" },
 };
 
+// ===== Default Person Settings =====
+export const DEFAULT_PERSON1_SETTINGS: PersonSettings = { x: 0.3, yOffset: 0, scale: 1.0, rotation: 0, flipH: false, flipV: false };
+export const DEFAULT_PERSON2_SETTINGS: PersonSettings = { x: 0.7, yOffset: 0, scale: 1.0, rotation: 0, flipH: false, flipV: false };
+
 // ===== Default Settings =====
 export const DEFAULT_MERGE_SETTINGS: MergeSettings = {
   backgroundColor: "#FFFFFF",
   outputSize: { width: 1440, height: 2559, preset: "video" },
-  person1: { x: 0.3, yOffset: 0, scale: 1.0 },
-  person2: { x: 0.7, yOffset: 0, scale: 1.0 },
+  person1: { ...DEFAULT_PERSON1_SETTINGS },
+  person2: { ...DEFAULT_PERSON2_SETTINGS },
   shadow: { enabled: true, intensity: 0.5 },
   colorCorrection: true,
   layerOrder: "person1_back",

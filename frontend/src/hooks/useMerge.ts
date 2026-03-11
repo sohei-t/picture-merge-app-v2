@@ -43,11 +43,17 @@ function buildRequest(
         x: clamp(settings.person1.x, -0.5, 1.5),
         y_offset: Math.round(clamp(settings.person1.yOffset, -2000, 2000)),
         scale: clamp(settings.person1.scale, 0.5, 2.0),
+        rotation: clamp(settings.person1.rotation, -45, 45),
+        flip_h: settings.person1.flipH,
+        flip_v: settings.person1.flipV,
       },
       person2: {
         x: clamp(settings.person2.x, -0.5, 1.5),
         y_offset: Math.round(clamp(settings.person2.yOffset, -2000, 2000)),
         scale: clamp(settings.person2.scale, 0.5, 2.0),
+        rotation: clamp(settings.person2.rotation, -45, 45),
+        flip_h: settings.person2.flipH,
+        flip_v: settings.person2.flipV,
       },
       shadow: {
         enabled: settings.shadow.enabled,

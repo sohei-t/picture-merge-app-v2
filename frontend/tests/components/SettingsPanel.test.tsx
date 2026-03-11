@@ -159,7 +159,7 @@ describe("SettingsPanel", () => {
     );
 
     const sliders = document.querySelectorAll('input[type="range"]');
-    const person2PositionSlider = sliders[2] as HTMLInputElement;
+    const person2PositionSlider = sliders[3] as HTMLInputElement;
     fireEvent.change(person2PositionSlider, { target: { value: "80" } });
 
     expect(onChange).toHaveBeenCalledWith(
@@ -179,7 +179,7 @@ describe("SettingsPanel", () => {
     );
 
     const sliders = document.querySelectorAll('input[type="range"]');
-    const person2ScaleSlider = sliders[3] as HTMLInputElement;
+    const person2ScaleSlider = sliders[4] as HTMLInputElement;
     fireEvent.change(person2ScaleSlider, { target: { value: "75" } });
 
     expect(onChange).toHaveBeenCalledWith(

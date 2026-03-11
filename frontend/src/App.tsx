@@ -286,7 +286,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Header serverConnected={isServerConnected} />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-[1600px] mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel: Image Upload + Segmentation Results */}
           <div className="lg:col-span-1 space-y-4">
@@ -326,8 +326,8 @@ function App() {
             </div>
           </div>
 
-          {/* Right Panel: Preview + Settings + Download */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Center: Preview + Download */}
+          <div className="lg:col-span-1 space-y-4">
             <div className="bg-white rounded-xl shadow-sm p-4">
               <h2 className="text-lg font-semibold text-gray-800 mb-3">合成プレビュー</h2>
               <PreviewCanvas
@@ -363,14 +363,6 @@ function App() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <SettingsPanel
-                settings={settings}
-                onChange={handleSettingsChange}
-                disabled={!canEdit || isProcessing}
-              />
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-4">
               <DownloadButton
                 phase={phase}
                 onDownload={handleDownload}
@@ -381,6 +373,17 @@ function App() {
                 hasCropRect={!!crop.cropRect}
                 onCropToggle={crop.isCropMode ? crop.disableCropMode : crop.enableCropMode}
                 onCropExecute={handleCropExecute}
+              />
+            </div>
+          </div>
+
+          {/* Right Panel: Settings */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm p-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+              <SettingsPanel
+                settings={settings}
+                onChange={handleSettingsChange}
+                disabled={!canEdit || isProcessing}
               />
             </div>
           </div>

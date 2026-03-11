@@ -46,6 +46,11 @@ class PersonSettingsModel(BaseModel):
     scale: float = Field(
         default=1.0, ge=0.5, le=2.0, description="Scale (0.5-2.0)"
     )
+    rotation: float = Field(
+        default=0.0, ge=-45.0, le=45.0, description="Rotation angle in degrees (-45 to 45)"
+    )
+    flip_h: bool = Field(default=False, description="Horizontal flip")
+    flip_v: bool = Field(default=False, description="Vertical flip")
 
 
 class ShadowSettingsModel(BaseModel):

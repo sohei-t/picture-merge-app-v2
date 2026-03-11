@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import type { AdjustParams, AppError } from "../types/index.ts";
 import { DEFAULT_ADJUST_PARAMS } from "../types/index.ts";
-import { aiEnhance, adjustImage } from "../api/client.ts";
+import { aiEnhance, adjustImage, resetImage } from "../api/client.ts";
 
 interface EnhanceResult {
   segmentedImage: string;
@@ -21,12 +21,17 @@ interface UseEnhanceReturn {
   getAdjustParams: (segId: string) => AdjustParams;
   applyAdjust: (segId: string, params: AdjustParams) => Promise<EnhanceResult | null>;
 
+  // Reset to original
+  isResetting: boolean;
+  resetToOriginal: (segId: string) => Promise<EnhanceResult | null>;
+
   error: AppError | null;
 }
 
 export function useEnhance(): UseEnhanceReturn {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [enhancedTargets, setEnhancedTargets] = useState<Set<string>>(new Set());
   const [adjustParams, setAdjustParams] = useState<Record<string, AdjustParams>>({});
   const [error, setError] = useState<AppError | null>(null);
@@ -89,6 +94,35 @@ export function useEnhance(): UseEnhanceReturn {
     []
   );
 
+  const resetToOriginal = useCallback(async (segId: string): Promise<EnhanceResult | null> => {
+    setIsResetting(true);
+    setError(null);
+    try {
+      const res = await resetImage(segId);
+      // Clear enhancement and adjustment state for this seg_id
+      setEnhancedTargets((prev) => {
+        const next = new Set(prev);
+        next.delete(segId);
+        return next;
+      });
+      setAdjustParams((prev) => {
+        const next = { ...prev };
+        delete next[segId];
+        return next;
+      });
+      return {
+        segmentedImage: res.segmented_image,
+        bbox: res.bbox,
+        footY: res.foot_y,
+      };
+    } catch (err) {
+      setError(err as AppError);
+      return null;
+    } finally {
+      setIsResetting(false);
+    }
+  }, []);
+
   return {
     isEnhancing,
     enhancedTargets,
@@ -97,6 +131,8 @@ export function useEnhance(): UseEnhanceReturn {
     adjustParams,
     getAdjustParams,
     applyAdjust,
+    isResetting,
+    resetToOriginal,
     error,
   };
 }

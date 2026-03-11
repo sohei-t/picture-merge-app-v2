@@ -7,10 +7,12 @@ interface EnhancePanelProps {
   segId: string;
   isEnhancing: boolean;
   isAdjusting: boolean;
+  isResetting: boolean;
   isAiEnhanced: boolean;
   adjustParams: AdjustParams;
   onAiEnhance: (segId: string) => void;
   onAdjust: (segId: string, params: AdjustParams) => void;
+  onResetToOriginal: (segId: string) => void;
   onClose: () => void;
 }
 
@@ -27,10 +29,12 @@ export function EnhancePanel({
   segId,
   isEnhancing,
   isAdjusting,
+  isResetting,
   isAiEnhanced,
   adjustParams,
   onAiEnhance,
   onAdjust,
+  onResetToOriginal,
   onClose,
 }: EnhancePanelProps) {
   const label = target === "person1" ? "人物1" : "人物2";
@@ -125,7 +129,7 @@ export function EnhancePanel({
         ))}
       </div>
 
-      {/* Reset button */}
+      {/* Reset sliders button */}
       <button
         onClick={handleReset}
         disabled={isDefault && !isAdjusting}
@@ -133,6 +137,20 @@ export function EnhancePanel({
       >
         {isAdjusting ? "適用中..." : "調整をリセット"}
       </button>
+
+      {/* Reset to original button */}
+      <div className="pt-1 border-t border-blue-200">
+        <button
+          onClick={() => onResetToOriginal(segId)}
+          disabled={isResetting || isEnhancing}
+          className="w-full text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {isResetting ? "復元中..." : "元の画像に戻す"}
+        </button>
+        <p className="text-[10px] text-gray-400 mt-0.5 text-center">
+          高画質化・消しゴム・調整をすべて取り消します
+        </p>
+      </div>
     </div>
   );
 }

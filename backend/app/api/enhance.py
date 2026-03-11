@@ -42,6 +42,9 @@ async def ai_enhance_endpoint(seg_id: str):
             detail={"error": "invalid_segment_id", "message": "セグメントIDが見つかりません。"},
         )
 
+    # Save original before first modification
+    _save_original(seg_id)
+
     enhanced, info = ai_enhance(entry.image)
 
     # Recompute bbox and foot_y
@@ -100,8 +103,67 @@ class AdjustResponse(BaseModel):
     foot_y: int
 
 
-# Store original (pre-adjustment) images for re-adjustment from base
+# Store original (pre-enhancement/adjustment) images for reset
 _original_images: dict[str, "SegmentedOutput"] = {}
+
+
+def _save_original(seg_id: str) -> None:
+    """Save the original image before any modification (idempotent)."""
+    if seg_id in _original_images:
+        return
+    entry = segmentation_cache.get(seg_id)
+    if entry is None:
+        return
+    from app.services.cache import SegmentedOutput
+
+    _original_images[seg_id] = SegmentedOutput(
+        image=entry.image.copy(),
+        bbox=entry.bbox,
+        foot_y=entry.foot_y,
+        original_size=entry.original_size,
+    )
+
+
+class ResetResponse(BaseModel):
+    seg_id: str
+    segmented_image: str
+    bbox: dict
+    foot_y: int
+
+
+@router.post("/reset-image/{seg_id}", response_model=ResetResponse)
+async def reset_image_endpoint(seg_id: str):
+    """Reset a segmented image to its original state (before any enhancement/adjustment/erasing)."""
+    if seg_id not in _original_images:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": "no_original", "message": "元の画像が保存されていません。"},
+        )
+
+    from app.services.cache import SegmentedOutput
+
+    original = _original_images[seg_id]
+    restored = SegmentedOutput(
+        image=original.image.copy(),
+        bbox=original.bbox,
+        foot_y=original.foot_y,
+        original_size=original.original_size,
+    )
+    segmentation_cache.put(seg_id, restored)
+
+    # Clear the saved original so next modification saves fresh
+    del _original_images[seg_id]
+
+    x, y, w, h = restored.bbox
+    bbox = {"x": x, "y": y, "width": w, "height": h}
+    seg_image_b64 = image_to_base64(restored.image, fmt="PNG")
+
+    return ResetResponse(
+        seg_id=seg_id,
+        segmented_image=seg_image_b64,
+        bbox=bbox,
+        foot_y=restored.foot_y,
+    )
 
 
 @router.post("/adjust", response_model=AdjustResponse)
@@ -114,18 +176,11 @@ async def adjust_endpoint(req: AdjustRequest):
     from app.services.cache import SegmentedOutput
 
     # Save original on first adjustment
+    _save_original(req.seg_id)
     if req.seg_id not in _original_images:
-        entry = segmentation_cache.get(req.seg_id)
-        if entry is None:
-            raise HTTPException(
-                status_code=404,
-                detail={"error": "invalid_segment_id", "message": "セグメントIDが見つかりません。"},
-            )
-        _original_images[req.seg_id] = SegmentedOutput(
-            image=entry.image.copy(),
-            bbox=entry.bbox,
-            foot_y=entry.foot_y,
-            original_size=entry.original_size,
+        raise HTTPException(
+            status_code=404,
+            detail={"error": "invalid_segment_id", "message": "セグメントIDが見つかりません。"},
         )
 
     original = _original_images[req.seg_id]

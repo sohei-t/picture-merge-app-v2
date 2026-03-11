@@ -314,6 +314,29 @@ function App() {
     [enhance, enhanceTarget, segmentation, merge, settings]
   );
 
+  // ===== Reset to original handler =====
+  const handleResetToOriginal = useCallback(
+    async (segId: string) => {
+      const result = await enhance.resetToOriginal(segId);
+      if (result && enhanceTarget) {
+        segmentation.updatePerson(enhanceTarget, {
+          segmentedImage: result.segmentedImage,
+          bbox: result.bbox,
+          footY: result.footY,
+        });
+        // Refresh preview
+        if (segmentation.person1 && segmentation.person2) {
+          merge.fetchPreview(
+            segmentation.person1.id,
+            segmentation.person2.id,
+            settings
+          );
+        }
+      }
+    },
+    [enhance, enhanceTarget, segmentation, merge, settings]
+  );
+
   // ===== Compute person highlight positions for canvas overlay =====
   const person1Highlight = useMemo(() => {
     if (!segmentation.person1) return null;
@@ -504,6 +527,7 @@ function App() {
                   }
                   isEnhancing={enhance.isEnhancing}
                   isAdjusting={enhance.isAdjusting}
+                  isResetting={enhance.isResetting}
                   isAiEnhanced={
                     enhance.enhancedTargets.has(
                       (enhanceTarget === "person1"
@@ -518,6 +542,7 @@ function App() {
                   )}
                   onAiEnhance={handleAiEnhance}
                   onAdjust={handleAdjust}
+                  onResetToOriginal={handleResetToOriginal}
                   onClose={() => setEnhanceTarget(null)}
                 />
               </div>

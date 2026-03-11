@@ -30,8 +30,8 @@ WEIGHTS_DIR = Path(__file__).parent.parent.parent / "weights"
 _face_enhancer = None
 _bg_upsampler = None
 
-# Max dimension BEFORE Real-ESRGAN 2x (keeps output ~1024px)
-MAX_INPUT_DIM = 512
+# Max dimension BEFORE Real-ESRGAN 2x (keeps output ~1536px)
+MAX_INPUT_DIM = 768
 
 
 def _get_device() -> torch.device:
@@ -246,6 +246,20 @@ def ai_enhance(image: Image.Image) -> tuple[Image.Image, dict]:
     result = Image.fromarray(output_rgb, "RGB").resize(
         (orig_w, orig_h), Image.LANCZOS
     )
+
+    # Post-processing: CLAHE + sharpening on top of Real-ESRGAN output
+    result_arr = np.array(result)
+    # CLAHE on L channel for local contrast
+    lab = cv2.cvtColor(result_arr, cv2.COLOR_RGB2LAB)
+    l_ch, a_ch, b_ch = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
+    l_ch = clahe.apply(l_ch)
+    result_arr = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2RGB)
+    # Light unsharp mask
+    blurred = cv2.GaussianBlur(result_arr, (0, 0), sigmaX=0.8)
+    result_arr = cv2.addWeighted(result_arr, 1.3, blurred, -0.3, 0)
+    result_arr = np.clip(result_arr, 0, 255).astype(np.uint8)
+    result = Image.fromarray(result_arr, "RGB")
 
     # Restore alpha channel
     if has_alpha and alpha_pil is not None:

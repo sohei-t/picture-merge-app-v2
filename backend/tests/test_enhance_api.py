@@ -139,6 +139,51 @@ class TestAdjustEndpoint:
         assert updated_mean > orig_mean
 
 
+class TestResetImageEndpoint:
+    """Tests for POST /api/reset-image/{seg_id}."""
+
+    def test_reset_not_found(self, client):
+        response = client.post("/api/reset-image/nonexistent")
+        assert response.status_code == 404
+
+    def test_reset_after_adjust(self, client):
+        seg_id = _add_test_entry()
+        orig = segmentation_cache.get(seg_id)
+        orig_arr = np.array(orig.image).copy()
+
+        # Adjust brightness
+        client.post("/api/adjust", json={
+            "seg_id": seg_id,
+            "brightness": 0.8,
+        })
+        adjusted = segmentation_cache.get(seg_id)
+        assert not np.array_equal(np.array(adjusted.image), orig_arr)
+
+        # Reset
+        response = client.post(f"/api/reset-image/{seg_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["seg_id"] == seg_id
+        assert data["segmented_image"].startswith("data:image/png;base64,")
+
+        # Verify image is back to original
+        restored = segmentation_cache.get(seg_id)
+        np.testing.assert_array_equal(np.array(restored.image), orig_arr)
+
+    def test_reset_clears_saved_original(self, client):
+        """After reset, next modification should save a fresh original."""
+        from app.api.enhance import _original_images
+        seg_id = _add_test_entry()
+
+        # First adjust (saves original)
+        client.post("/api/adjust", json={"seg_id": seg_id, "brightness": 0.5})
+        assert seg_id in _original_images
+
+        # Reset (clears saved original)
+        client.post(f"/api/reset-image/{seg_id}")
+        assert seg_id not in _original_images
+
+
 class TestEnhanceBody:
     """Tests for _enhance_body() OpenCV body enhancement."""
 

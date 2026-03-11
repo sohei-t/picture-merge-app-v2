@@ -5,6 +5,9 @@ import type {
   HealthResponse,
   DetectRegionsResponse,
   EraseResponse,
+  AiEnhanceResponse,
+  AdjustParams,
+  AdjustResponse,
   AppError,
   ApiError,
 } from "../types/index.ts";
@@ -188,6 +191,48 @@ export async function eraseManual(
   }
 
   return handleResponse<EraseResponse>(response);
+}
+
+export async function aiEnhance(segId: string): Promise<AiEnhanceResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/ai-enhance/${segId}`, {
+      method: "POST",
+    });
+  } catch {
+    throw {
+      type: "network",
+      message: "サーバーに接続できません。起動を確認してください。",
+      retryable: true,
+    } satisfies AppError;
+  }
+
+  return handleResponse<AiEnhanceResponse>(response);
+}
+
+export async function adjustImage(
+  segId: string,
+  params: AdjustParams
+): Promise<AdjustResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/adjust`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        seg_id: segId,
+        ...params,
+      }),
+    });
+  } catch {
+    throw {
+      type: "network",
+      message: "サーバーに接続できません。起動を確認してください。",
+      retryable: true,
+    } satisfies AppError;
+  }
+
+  return handleResponse<AdjustResponse>(response);
 }
 
 export async function healthCheck(): Promise<HealthResponse> {

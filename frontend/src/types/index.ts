@@ -160,6 +160,42 @@ export interface EraseResponse {
   processing_time_ms: number;
 }
 
+// ===== AI Enhancement =====
+export interface AiEnhanceResponse {
+  seg_id: string;
+  segmented_image: string;
+  bbox: BoundingBox;
+  foot_y: number;
+  processing_time_ms: number;
+  method: string;
+  scale: number;
+  output_size: ImageSize;
+}
+
+// ===== Manual Adjustment =====
+export interface AdjustParams {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  temperature: number;
+  sharpness: number;
+}
+
+export interface AdjustResponse {
+  seg_id: string;
+  segmented_image: string;
+  bbox: BoundingBox;
+  foot_y: number;
+}
+
+export const DEFAULT_ADJUST_PARAMS: AdjustParams = {
+  brightness: 0,
+  contrast: 0,
+  saturation: 0,
+  temperature: 0,
+  sharpness: 0,
+};
+
 // ===== App Error =====
 export interface AppError {
   type: "validation" | "network" | "segmentation" | "merge" | "unknown";

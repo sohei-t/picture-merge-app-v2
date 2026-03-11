@@ -8,6 +8,7 @@ import { useMerge } from "./hooks/useMerge.ts";
 import { useCanvasDrag } from "./hooks/useCanvasDrag.ts";
 import { useCropMode } from "./hooks/useCropMode.ts";
 import { useEraser } from "./hooks/useEraser.ts";
+import { useEnhance } from "./hooks/useEnhance.ts";
 import { Header } from "./components/Header.tsx";
 import { ImageDropzone } from "./components/ImageDropzone.tsx";
 import { SegmentedPreview } from "./components/SegmentedPreview.tsx";
@@ -16,6 +17,7 @@ import { PreviewCanvas } from "./components/PreviewCanvas.tsx";
 import { DownloadButton } from "./components/DownloadButton.tsx";
 import { StatusIndicator } from "./components/StatusIndicator.tsx";
 import { EraserPanel } from "./components/EraserPanel.tsx";
+import { EnhancePanel } from "./components/EnhancePanel.tsx";
 
 function App() {
   // ===== Server connection =====
@@ -51,9 +53,11 @@ function App() {
   const merge = useMerge();
   const crop = useCropMode();
   const eraser = useEraser();
+  const enhance = useEnhance();
+  const [enhanceTarget, setEnhanceTarget] = useState<"person1" | "person2" | null>(null);
 
   // ===== Derived error =====
-  const displayError = appError ?? segmentation.error ?? merge.error ?? eraser.error;
+  const displayError = appError ?? segmentation.error ?? merge.error ?? eraser.error ?? enhance.error;
 
   // ===== File handlers =====
   const handleFile1 = useCallback(
@@ -63,6 +67,7 @@ function App() {
       merge.reset();
       crop.disableCropMode();
       eraser.close();
+      setEnhanceTarget(null);
       if (file2) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file, file2).then(() => {
@@ -85,6 +90,7 @@ function App() {
       merge.reset();
       crop.disableCropMode();
       eraser.close();
+      setEnhanceTarget(null);
       if (file1) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file1, file).then(() => {
@@ -107,6 +113,7 @@ function App() {
     merge.reset();
     crop.disableCropMode();
     eraser.close();
+    setEnhanceTarget(null);
     setPhase(file2 ? "ONE_UPLOADED" : "IDLE");
   }, [file2, segmentation, merge, crop, eraser]);
 
@@ -180,6 +187,7 @@ function App() {
     segmentation.reset();
     merge.reset();
     eraser.close();
+    setEnhanceTarget(null);
   }, [segmentation, merge, eraser]);
 
   // ===== Eraser handlers =====
@@ -251,6 +259,59 @@ function App() {
       }
     },
     [eraser, segmentation, merge, settings]
+  );
+
+  // ===== Enhance handlers =====
+  const handleEnhanceOpen = useCallback(
+    (target: "person1" | "person2") => {
+      setEnhanceTarget(target);
+      eraser.close(); // close eraser if open
+    },
+    [eraser]
+  );
+
+  const handleAiEnhance = useCallback(
+    async (segId: string) => {
+      const result = await enhance.runAiEnhance(segId);
+      if (result && enhanceTarget) {
+        segmentation.updatePerson(enhanceTarget, {
+          segmentedImage: result.segmentedImage,
+          bbox: result.bbox,
+          footY: result.footY,
+        });
+        // Refresh preview
+        if (segmentation.person1 && segmentation.person2) {
+          merge.fetchPreview(
+            segmentation.person1.id,
+            segmentation.person2.id,
+            settings
+          );
+        }
+      }
+    },
+    [enhance, enhanceTarget, segmentation, merge, settings]
+  );
+
+  const handleAdjust = useCallback(
+    async (segId: string, params: import("./types/index.ts").AdjustParams) => {
+      const result = await enhance.applyAdjust(segId, params);
+      if (result && enhanceTarget) {
+        segmentation.updatePerson(enhanceTarget, {
+          segmentedImage: result.segmentedImage,
+          bbox: result.bbox,
+          footY: result.footY,
+        });
+        // Refresh preview
+        if (segmentation.person1 && segmentation.person2) {
+          merge.fetchPreview(
+            segmentation.person1.id,
+            segmentation.person2.id,
+            settings
+          );
+        }
+      }
+    },
+    [enhance, enhanceTarget, segmentation, merge, settings]
   );
 
   // ===== Compute person highlight positions for canvas overlay =====
@@ -397,7 +458,9 @@ function App() {
                 person1={segmentation.person1}
                 person2={segmentation.person2}
                 onErase={canEdit ? handleEraserOpen : undefined}
+                onEnhance={canEdit ? handleEnhanceOpen : undefined}
                 eraserActive={eraser.target}
+                enhanceActive={enhanceTarget}
               />
             </div>
 
@@ -425,6 +488,37 @@ function App() {
                   onEraseRegions={handleEraseRegions}
                   onBrushApply={handleBrushApply}
                   onClose={eraser.close}
+                />
+              </div>
+            )}
+
+            {/* Enhance Panel */}
+            {enhanceTarget && (
+              <div className="bg-white rounded-xl shadow-sm p-4">
+                <EnhancePanel
+                  target={enhanceTarget}
+                  segId={
+                    (enhanceTarget === "person1"
+                      ? segmentation.person1?.id
+                      : segmentation.person2?.id) ?? ""
+                  }
+                  isEnhancing={enhance.isEnhancing}
+                  isAdjusting={enhance.isAdjusting}
+                  isAiEnhanced={
+                    enhance.enhancedTargets.has(
+                      (enhanceTarget === "person1"
+                        ? segmentation.person1?.id
+                        : segmentation.person2?.id) ?? ""
+                    )
+                  }
+                  adjustParams={enhance.getAdjustParams(
+                    (enhanceTarget === "person1"
+                      ? segmentation.person1?.id
+                      : segmentation.person2?.id) ?? ""
+                  )}
+                  onAiEnhance={handleAiEnhance}
+                  onAdjust={handleAdjust}
+                  onClose={() => setEnhanceTarget(null)}
                 />
               </div>
             )}

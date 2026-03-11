@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { AppPhase, MergeSettings, AppError } from "./types/index.ts";
 import { DEFAULT_MERGE_SETTINGS } from "./types/index.ts";
 import { healthCheck } from "./api/client.ts";
@@ -57,6 +57,8 @@ function App() {
     (file: File) => {
       setFile1(file);
       setAppError(null);
+      merge.reset();
+      crop.disableCropMode();
       if (file2) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file, file2).then(() => {
@@ -69,13 +71,15 @@ function App() {
         segmentation.segmentOne("person1", file).catch(() => {});
       }
     },
-    [file2, segmentation]
+    [file2, segmentation, merge, crop]
   );
 
   const handleFile2 = useCallback(
     (file: File) => {
       setFile2(file);
       setAppError(null);
+      merge.reset();
+      crop.disableCropMode();
       if (file1) {
         setPhase("SEGMENTING");
         segmentation.segmentBoth(file1, file).then(() => {
@@ -88,7 +92,7 @@ function App() {
         segmentation.segmentOne("person2", file).catch(() => {});
       }
     },
-    [file1, segmentation]
+    [file1, segmentation, merge, crop]
   );
 
   // ===== Per-person clear =====
@@ -170,11 +174,59 @@ function App() {
     merge.reset();
   }, [segmentation, merge]);
 
+  // ===== Compute person highlight positions for canvas overlay =====
+  const person1Highlight = useMemo(() => {
+    if (!segmentation.person1) return null;
+    const bbox = segmentation.person1.bbox;
+    const outW = settings.outputSize.width;
+    const outH = settings.outputSize.height;
+    const targetHeight = outH * 0.7;
+    const scale = bbox.height > 0 ? (targetHeight / bbox.height) * settings.person1.scale : settings.person1.scale;
+    const personW = bbox.width * scale;
+    const personH = bbox.height * scale;
+    const footLineY = outH * 0.8;
+    const footRel = (segmentation.person1.footY - bbox.y) * scale;
+    const topY = footLineY - footRel + settings.person1.yOffset;
+    const previewMaxDim = 768;
+    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
+    return {
+      centerX: settings.person1.x,
+      topY: topY * ratio,
+      width: personW * ratio,
+      height: personH * ratio,
+    };
+  }, [segmentation.person1, settings]);
+
+  const person2Highlight = useMemo(() => {
+    if (!segmentation.person1 || !segmentation.person2) return null;
+    const bbox1 = segmentation.person1.bbox;
+    const bbox2 = segmentation.person2.bbox;
+    const outW = settings.outputSize.width;
+    const outH = settings.outputSize.height;
+    const targetHeight = outH * 0.7;
+    const p1H = bbox1.height;
+    const p2H = bbox2.height;
+    const autoRatio = p2H === 0 ? 1.0 : Math.max(0.8, Math.min(1.2, p1H / p2H));
+    const scale = p2H > 0 ? (targetHeight / p2H) * autoRatio * settings.person2.scale : settings.person2.scale;
+    const personW = bbox2.width * scale;
+    const personH = bbox2.height * scale;
+    const footLineY = outH * 0.8;
+    const footRel = (segmentation.person2.footY - bbox2.y) * scale;
+    const topY = footLineY - footRel + settings.person2.yOffset;
+    const previewMaxDim = 768;
+    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
+    return {
+      centerX: settings.person2.x,
+      topY: topY * ratio,
+      width: personW * ratio,
+      height: personH * ratio,
+    };
+  }, [segmentation.person1, segmentation.person2, settings]);
+
   // ===== Canvas drag =====
   const drag = useCanvasDrag({
-    person1Bbox: segmentation.person1?.bbox ?? null,
-    person2Bbox: segmentation.person2?.bbox ?? null,
-    canvasWidth: 640,
+    person1Highlight,
+    person2Highlight,
     outputWidth: settings.outputSize.width,
     outputHeight: settings.outputSize.height,
     person1X: settings.person1.x,
@@ -200,65 +252,12 @@ function App() {
     ),
   });
 
-  // ===== Compute person highlight positions for canvas overlay =====
-  const person1Highlight = useMemo(() => {
-    if (!segmentation.person1) return null;
-    const bbox = segmentation.person1.bbox;
-    const outW = settings.outputSize.width;
-    const outH = settings.outputSize.height;
-    const targetHeight = outH * 0.7;
-    const scale = bbox.height > 0 ? (targetHeight / bbox.height) * settings.person1.scale : settings.person1.scale;
-    const personW = bbox.width * scale;
-    const personH = bbox.height * scale;
-    const footLineY = outH * 0.8;
-    const footRel = (segmentation.person1.footY - bbox.y) * scale;
-    const topY = footLineY - footRel + settings.person1.yOffset;
-    // Convert to preview ratio coordinates
-    const previewMaxDim = 768;
-    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
-    return {
-      centerX: settings.person1.x,
-      topY: topY * ratio,
-      width: personW * ratio,
-      height: personH * ratio,
-    };
-  }, [segmentation.person1, settings]);
-
-  const person2Highlight = useMemo(() => {
-    if (!segmentation.person1 || !segmentation.person2) return null;
-    const bbox1 = segmentation.person1.bbox;
-    const bbox2 = segmentation.person2.bbox;
-    const outW = settings.outputSize.width;
-    const outH = settings.outputSize.height;
-    const targetHeight = outH * 0.7;
-    // Auto scale ratio (same as backend)
-    const p1H = bbox1.height;
-    const p2H = bbox2.height;
-    const autoRatio = p2H === 0 ? 1.0 : Math.max(0.8, Math.min(1.2, p1H / p2H));
-    const scale = p2H > 0 ? (targetHeight / p2H) * autoRatio * settings.person2.scale : settings.person2.scale;
-    const personW = bbox2.width * scale;
-    const personH = bbox2.height * scale;
-    const footLineY = outH * 0.8;
-    const footRel = (segmentation.person2.footY - bbox2.y) * scale;
-    const topY = footLineY - footRel + settings.person2.yOffset;
-    const previewMaxDim = 768;
-    const ratio = Math.min(1, previewMaxDim / Math.max(outW, outH));
-    return {
-      centerX: settings.person2.x,
-      topY: topY * ratio,
-      width: personW * ratio,
-      height: personH * ratio,
-    };
-  }, [segmentation.person1, segmentation.person2, settings]);
-
   // ===== Crop with server-side cropping =====
-  const isCropDownloading = useRef(false);
   const handleCropExecute = useCallback(async () => {
     if (!segmentation.person1 || !segmentation.person2) return;
     const normalizedCrop = crop.getNormalizedCrop();
     if (!normalizedCrop) return;
-    if (isCropDownloading.current) return;
-    isCropDownloading.current = true;
+    if (merge.isLoading) return;
     try {
       const response = await merge.fetchCropped(
         segmentation.person1.id,
@@ -267,10 +266,15 @@ function App() {
         normalizedCrop
       );
       downloadImage(response.merged_image, `cropped_${response.output_size.width}x${response.output_size.height}`);
-    } catch {
-      // error is handled by merge hook
-    } finally {
-      isCropDownloading.current = false;
+    } catch (err) {
+      console.error("Crop download failed:", err);
+      if (!merge.error) {
+        setAppError({
+          type: "merge",
+          message: "切り出しダウンロードに失敗しました。ページをリロードして再度お試しください。",
+          retryable: true,
+        });
+      }
     }
   }, [segmentation.person1, segmentation.person2, settings, merge, crop]);
 

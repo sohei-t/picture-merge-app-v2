@@ -1,5 +1,5 @@
 import type { MergeSettings, OutputPreset } from "../types/index.ts";
-import { OUTPUT_PRESETS } from "../types/index.ts";
+import { OUTPUT_PRESETS, DEFAULT_MERGE_SETTINGS } from "../types/index.ts";
 
 interface SettingsPanelProps {
   settings: MergeSettings;
@@ -22,7 +22,15 @@ export function SettingsPanel({ settings, onChange, disabled = false }: Settings
 
   return (
     <div className={`space-y-4 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-      <h3 className="text-sm font-semibold text-gray-800 border-b pb-2">合成設定</h3>
+      <div className="flex items-center justify-between border-b pb-2">
+        <h3 className="text-sm font-semibold text-gray-800">合成設定</h3>
+        <button
+          onClick={() => onChange(DEFAULT_MERGE_SETTINGS)}
+          className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
+        >
+          設定リセット
+        </button>
+      </div>
 
       {/* Background Color */}
       <div className="space-y-1">
@@ -92,8 +100,8 @@ export function SettingsPanel({ settings, onChange, disabled = false }: Settings
         <label className="block text-xs font-medium text-gray-600">人物1 位置</label>
         <input
           type="range"
-          min={0}
-          max={100}
+          min={-50}
+          max={150}
           value={Math.round(settings.person1.x * 100)}
           onChange={(e) =>
             onChange({
@@ -124,8 +132,8 @@ export function SettingsPanel({ settings, onChange, disabled = false }: Settings
         <label className="block text-xs font-medium text-gray-600">人物2 位置</label>
         <input
           type="range"
-          min={0}
-          max={100}
+          min={-50}
+          max={150}
           value={Math.round(settings.person2.x * 100)}
           onChange={(e) =>
             onChange({

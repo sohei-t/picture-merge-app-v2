@@ -276,7 +276,7 @@ class TestMergeEndpointErrors:
             json={
                 "image1_id": id1,
                 "image2_id": id2,
-                "settings": {"person1": {"x": -0.1, "y_offset": 0, "scale": 1.0}},
+                "settings": {"person1": {"x": -0.6, "y_offset": 0, "scale": 1.0}},
             },
         )
         assert response.status_code == 422
@@ -289,7 +289,7 @@ class TestMergeEndpointErrors:
             json={
                 "image1_id": id1,
                 "image2_id": id2,
-                "settings": {"person1": {"x": 1.5, "y_offset": 0, "scale": 1.0}},
+                "settings": {"person1": {"x": 1.6, "y_offset": 0, "scale": 1.0}},
             },
         )
         assert response.status_code == 422

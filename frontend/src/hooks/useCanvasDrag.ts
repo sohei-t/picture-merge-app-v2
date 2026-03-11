@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from "react";
-import type { BoundingBox } from "../types/index.ts";
 
 interface DragState {
   isDragging: boolean;
@@ -10,10 +9,16 @@ interface DragState {
   dragCurrentY: number;
 }
 
+export interface PersonHighlightForDrag {
+  centerX: number; // 0-1 ratio
+  topY: number;    // preview pixels
+  width: number;   // preview pixels
+  height: number;  // preview pixels
+}
+
 interface UseCanvasDragProps {
-  person1Bbox: BoundingBox | null;
-  person2Bbox: BoundingBox | null;
-  canvasWidth: number;
+  person1Highlight: PersonHighlightForDrag | null;
+  person2Highlight: PersonHighlightForDrag | null;
   outputWidth: number;
   outputHeight: number;
   person1X: number;
@@ -35,10 +40,8 @@ interface UseCanvasDragReturn {
 const CLICK_THRESHOLD = 5; // pixels - below this is a click, not a drag
 
 export function useCanvasDrag({
-  person1Bbox,
-  person2Bbox,
-  canvasWidth,
-  outputWidth,
+  person1Highlight,
+  person2Highlight,
   outputHeight,
   person1X,
   person2X,
@@ -56,48 +59,74 @@ export function useCanvasDrag({
   });
   const [selectedPerson, setSelectedPerson] = useState<"person1" | "person2" | null>(null);
 
-  const canvasRef = useRef<DOMRect | null>(null);
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const displaySizeRef = useRef<{ w: number; h: number }>({ w: 640, h: 640 });
 
+  // Returns position in CSS pixels relative to canvas display area
   const getCanvasPos = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
       const rect = e.currentTarget.getBoundingClientRect();
-      canvasRef.current = rect;
       return {
-        x: ((e.clientX - rect.left) / rect.width) * outputWidth,
-        y: ((e.clientY - rect.top) / rect.height) * outputHeight,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
       };
     },
-    [outputWidth, outputHeight]
+    []
   );
 
+  // Get display dimensions for ratio conversion
+  const getDisplaySize = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>): { w: number; h: number } => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      return { w: rect.width, h: rect.height };
+    },
+    []
+  );
+
+  // Hit test using highlight positions (matches actual visual positions on canvas)
   const hitTest = useCallback(
-    (canvasX: number): "person1" | "person2" | null => {
-      if (!person1Bbox || !person2Bbox) return null;
-      const scale = canvasWidth > 0 ? outputWidth / canvasWidth : 1;
+    (e: React.MouseEvent<HTMLCanvasElement>): "person1" | "person2" | null => {
+      if (!person1Highlight && !person2Highlight) return null;
 
-      const p1CenterX = person1X * outputWidth;
-      const p1HalfW = (person1Bbox.width * scale) / 2;
-      if (canvasX >= p1CenterX - p1HalfW && canvasX <= p1CenterX + p1HalfW) {
-        return "person1";
-      }
+      const rect = e.currentTarget.getBoundingClientRect();
+      // Get mouse position in 0-1 ratios relative to canvas display
+      const ratioX = (e.clientX - rect.left) / rect.width;
+      const ratioY = (e.clientY - rect.top) / rect.height;
+      // Get canvas internal dimensions (preview pixels)
+      const canvas = e.currentTarget;
+      const px = ratioX * canvas.width;
+      const py = ratioY * canvas.height;
 
-      const p2CenterX = person2X * outputWidth;
-      const p2HalfW = (person2Bbox.width * scale) / 2;
-      if (canvasX >= p2CenterX - p2HalfW && canvasX <= p2CenterX + p2HalfW) {
-        return "person2";
+      // Check person2 first (front layer by default), then person1
+      // This way clicking on overlapping area selects the front person
+      const checks: Array<{ key: "person1" | "person2"; hl: PersonHighlightForDrag }> = [];
+      if (person2Highlight) checks.push({ key: "person2", hl: person2Highlight });
+      if (person1Highlight) checks.push({ key: "person1", hl: person1Highlight });
+
+      for (const { key, hl } of checks) {
+        const cx = hl.centerX * canvas.width;
+        const left = cx - hl.width / 2;
+        const right = cx + hl.width / 2;
+        const top = hl.topY;
+        const bottom = hl.topY + hl.height;
+        if (px >= left && px <= right && py >= top && py <= bottom) {
+          return key;
+        }
       }
 
       return null;
     },
-    [person1Bbox, person2Bbox, canvasWidth, outputWidth, person1X, person2X]
+    [person1Highlight, person2Highlight]
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
       const pos = getCanvasPos(e);
-      const target = hitTest(pos.x);
+      const ds = getDisplaySize(e);
+      const target = hitTest(e);
       mouseDownPos.current = { x: e.clientX, y: e.clientY };
+      displaySizeRef.current = ds;
       if (target) {
         setDragState({
           isDragging: true,
@@ -109,12 +138,13 @@ export function useCanvasDrag({
         });
       }
     },
-    [getCanvasPos, hitTest]
+    [getCanvasPos, getDisplaySize, hitTest]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!dragState.isDragging) return;
+      e.preventDefault();
       const pos = getCanvasPos(e);
       setDragState((prev) => ({ ...prev, dragCurrentX: pos.x, dragCurrentY: pos.y }));
     },
@@ -136,6 +166,7 @@ export function useCanvasDrag({
         return;
       }
 
+      // deltaX/deltaY are in CSS pixels (display space)
       const deltaX = dragState.dragCurrentX - dragState.dragStartX;
       const deltaY = dragState.dragCurrentY - dragState.dragStartY;
 
@@ -153,11 +184,15 @@ export function useCanvasDrag({
           prev === dragState.dragTarget ? null : dragState.dragTarget
         );
       } else {
-        // This was a drag - update position and keep selected
+        // This was a drag - convert CSS pixel delta to output-space values
+        const { w: displayW, h: displayH } = displaySizeRef.current;
         const currentX = dragState.dragTarget === "person1" ? person1X : person2X;
         const currentYOffset = dragState.dragTarget === "person1" ? person1YOffset : person2YOffset;
-        const newX = Math.max(0, Math.min(1, currentX + deltaX / outputWidth));
-        const newYOffset = Math.max(-500, Math.min(500, currentYOffset + deltaY));
+        // X: convert CSS pixels to 0-1 ratio change
+        const newX = Math.max(-0.5, Math.min(1.5, currentX + deltaX / displayW));
+        // Y: convert CSS pixels to output pixels proportionally
+        const yDeltaInOutput = (deltaY / displayH) * outputHeight;
+        const newYOffset = Math.max(-2000, Math.min(2000, currentYOffset + yDeltaInOutput));
         onDragEnd(dragState.dragTarget, newX, newYOffset);
         setSelectedPerson(dragState.dragTarget);
       }
@@ -172,7 +207,7 @@ export function useCanvasDrag({
         dragCurrentY: 0,
       });
     },
-    [dragState, person1X, person2X, person1YOffset, person2YOffset, outputWidth, onDragEnd]
+    [dragState, person1X, person2X, person1YOffset, person2YOffset, outputHeight, onDragEnd]
   );
 
   const clearSelection = useCallback(() => {

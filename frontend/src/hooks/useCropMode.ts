@@ -7,6 +7,8 @@ export interface CropRect {
   endY: number;
 }
 
+const MIN_CROP_SIZE = 0.01; // Minimum 1% of canvas dimension
+
 interface UseCropModeReturn {
   isCropMode: boolean;
   cropRect: CropRect | null;
@@ -25,21 +27,28 @@ export function useCropMode(): UseCropModeReturn {
   const [cropRect, setCropRect] = useState<CropRect | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const drawingRef = useRef(false);
+  // Store the last valid (confirmed) crop rect so accidental clicks don't destroy it
+  const confirmedCropRef = useRef<CropRect | null>(null);
 
   const enableCropMode = useCallback(() => {
     setIsCropMode(true);
-    setCropRect(null);
+    // Default: select entire canvas area
+    const defaultRect: CropRect = { startX: 0, startY: 0, endX: 1, endY: 1 };
+    setCropRect(defaultRect);
+    confirmedCropRef.current = defaultRect;
   }, []);
 
   const disableCropMode = useCallback(() => {
     setIsCropMode(false);
     setCropRect(null);
+    confirmedCropRef.current = null;
     setIsDrawing(false);
     drawingRef.current = false;
   }, []);
 
   const resetCrop = useCallback(() => {
     setCropRect(null);
+    confirmedCropRef.current = null;
     setIsDrawing(false);
     drawingRef.current = false;
   }, []);
@@ -52,10 +61,17 @@ export function useCropMode(): UseCropModeReturn {
     };
   };
 
+  const isValidCropRect = (rect: CropRect): boolean => {
+    const w = Math.abs(rect.endX - rect.startX);
+    const h = Math.abs(rect.endY - rect.startY);
+    return w >= MIN_CROP_SIZE && h >= MIN_CROP_SIZE;
+  };
+
   const handleCropMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!isCropMode) return;
       const pos = getRelativePos(e);
+      // Start drawing a new rect (visual feedback during drag)
       setCropRect({ startX: pos.x, startY: pos.y, endX: pos.x, endY: pos.y });
       setIsDrawing(true);
       drawingRef.current = true;
@@ -78,6 +94,16 @@ export function useCropMode(): UseCropModeReturn {
     if (!drawingRef.current) return;
     setIsDrawing(false);
     drawingRef.current = false;
+    // On mouseUp, check if the drawn rect is valid
+    // If valid, confirm it; if not, restore the previous confirmed rect
+    setCropRect((current) => {
+      if (current && isValidCropRect(current)) {
+        confirmedCropRef.current = current;
+        return current;
+      }
+      // Drawn rect was too small (accidental click) - restore previous
+      return confirmedCropRef.current;
+    });
   }, []);
 
   const getNormalizedCrop = useCallback(() => {
@@ -86,7 +112,7 @@ export function useCropMode(): UseCropModeReturn {
     const y1 = Math.min(cropRect.startY, cropRect.endY);
     const x2 = Math.max(cropRect.startX, cropRect.endX);
     const y2 = Math.max(cropRect.startY, cropRect.endY);
-    if (x2 - x1 < 0.01 || y2 - y1 < 0.01) return null;
+    if (x2 - x1 < MIN_CROP_SIZE || y2 - y1 < MIN_CROP_SIZE) return null;
     return { x1, y1, x2, y2 };
   }, [cropRect]);
 

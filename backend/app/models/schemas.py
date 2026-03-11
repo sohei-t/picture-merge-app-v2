@@ -40,9 +40,9 @@ class PersonSettingsModel(BaseModel):
     """Person position/scale settings."""
 
     x: float = Field(
-        default=0.5, ge=0.0, le=1.0, description="Horizontal position (0.0-1.0)"
+        default=0.5, ge=-0.5, le=1.5, description="Horizontal position (-0.5-1.5, allows off-canvas)"
     )
-    y_offset: int = Field(default=0, ge=-500, le=500, description="Y offset (px)")
+    y_offset: int = Field(default=0, ge=-2000, le=2000, description="Y offset (px)")
     scale: float = Field(
         default=1.0, ge=0.5, le=2.0, description="Scale (0.5-2.0)"
     )

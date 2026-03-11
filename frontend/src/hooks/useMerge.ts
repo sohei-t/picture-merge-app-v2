@@ -20,6 +20,11 @@ interface UseMergeReturn {
   reset: () => void;
 }
 
+// Clamp value to [min, max] range
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
+
 function buildRequest(
   image1Id: string,
   image2Id: string,
@@ -32,21 +37,21 @@ function buildRequest(
     image2_id: image2Id,
     settings: {
       background_color: settings.backgroundColor,
-      output_width: settings.outputSize.width,
-      output_height: settings.outputSize.height,
+      output_width: clamp(settings.outputSize.width, 64, 4096),
+      output_height: clamp(settings.outputSize.height, 64, 4096),
       person1: {
-        x: settings.person1.x,
-        y_offset: settings.person1.yOffset,
-        scale: settings.person1.scale,
+        x: clamp(settings.person1.x, -0.5, 1.5),
+        y_offset: Math.round(clamp(settings.person1.yOffset, -2000, 2000)),
+        scale: clamp(settings.person1.scale, 0.5, 2.0),
       },
       person2: {
-        x: settings.person2.x,
-        y_offset: settings.person2.yOffset,
-        scale: settings.person2.scale,
+        x: clamp(settings.person2.x, -0.5, 1.5),
+        y_offset: Math.round(clamp(settings.person2.yOffset, -2000, 2000)),
+        scale: clamp(settings.person2.scale, 0.5, 2.0),
       },
       shadow: {
         enabled: settings.shadow.enabled,
-        intensity: settings.shadow.intensity,
+        intensity: clamp(settings.shadow.intensity, 0, 1),
       },
       color_correction: settings.colorCorrection,
       layer_order: settings.layerOrder,

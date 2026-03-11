@@ -403,16 +403,16 @@
           <span class="feature-id">F1</span>
           <span class="feature-text">
             <strong data-ja="写真入力（2枚）" data-en="Photo Input (2 images)"></strong><br>
-            <span data-ja="D&D/ファイル選択で2枚の人物写真を入力。JPEG/PNG/WebP/HEIC対応、最大20MB/枚"
-                  data-en="Input two portrait photos via drag & drop or file picker. Supports JPEG/PNG/WebP/HEIC, up to 20MB each"></span>
+            <span data-ja="D&D/ファイル選択で2枚の人物写真を入力。JPEG/PNG/WebP対応、最大20MB/枚。写真ごとの個別クリア対応"
+                  data-en="Input two portrait photos via drag & drop or file picker. Supports JPEG/PNG/WebP, up to 20MB each. Per-photo clear button"></span>
           </span>
         </li>
         <li>
           <span class="feature-id">F2</span>
           <span class="feature-text">
             <strong data-ja="AI人物セグメンテーション" data-en="AI Person Segmentation"></strong><br>
-            <span data-ja="rembg（U2Net）による自動背景除去。アルファマット処理で髪の毛のエッジも自然に処理"
-                  data-en="Automatic background removal via rembg (U2Net). Alpha matting ensures natural edges even for hair"></span>
+            <span data-ja="rembg（BiRefNet優先、U2Netフォールバック）による高精度な自動背景除去。低コントラスト境界でも正確に切り抜き"
+                  data-en="High-accuracy background removal via rembg (BiRefNet preferred, U2Net fallback). Accurate even at low-contrast boundaries"></span>
           </span>
         </li>
         <li>
@@ -435,8 +435,8 @@
           <span class="feature-id">F5</span>
           <span class="feature-text">
             <strong data-ja="リアルタイムプレビュー" data-en="Real-time Preview"></strong><br>
-            <span data-ja="パラメータ変更時に低解像度プレビューを即座に取得。Canvas上で人物をドラッグして位置調整可能"
-                  data-en="Instantly fetch low-resolution preview on parameter change. Drag people on Canvas for position adjustment"></span>
+            <span data-ja="パラメータ変更時に低解像度プレビューを即座に取得。Canvas上で人物を上下左右にドラッグして位置調整。レイヤー順序切替対応"
+                  data-en="Instantly fetch low-resolution preview on parameter change. Drag people on Canvas in all directions. Layer order switching supported"></span>
           </span>
         </li>
         <li>
@@ -445,6 +445,14 @@
             <strong data-ja="高品質出力" data-en="High-Quality Output"></strong><br>
             <span data-ja="フル解像度PNG出力。1024x1024（正方形）、1280x720（16:9）、720x1280（9:16）等のプリセット対応"
                   data-en="Full-resolution PNG output. Presets for 1024x1024 (square), 1280x720 (16:9), 720x1280 (9:16), and more"></span>
+          </span>
+        </li>
+        <li>
+          <span class="feature-id">F7</span>
+          <span class="feature-text">
+            <strong data-ja="トリミング機能" data-en="Crop & Trim"></strong><br>
+            <span data-ja="合成画像の任意範囲をドラッグ選択して切り出しダウンロード。上半身だけの切り出し等に対応"
+                  data-en="Select and crop any region of the merged image for download. Useful for extracting upper body shots, etc."></span>
           </span>
         </li>
       </ul>
@@ -470,7 +478,7 @@
           <div class="tech-tags">
             <span class="tech-tag">Python 3.11+</span>
             <span class="tech-tag">FastAPI</span>
-            <span class="tech-tag">rembg (U2Net)</span>
+            <span class="tech-tag">rembg (BiRefNet)</span>
             <span class="tech-tag">Pillow</span>
             <span class="tech-tag">OpenCV</span>
             <span class="tech-tag">uvicorn</span>
@@ -495,7 +503,7 @@
          data-en="Two-process architecture with frontend (React) and backend (FastAPI). Communication via REST API only, with all image processing centralized in the backend."></p>
       <div class="arch-flow" data-ja="Browser (React 18 + TypeScript)
   |
-  |-- POST /api/segment --> rembg (U2Net) セグメンテーション
+  |-- POST /api/segment --> rembg (BiRefNet) セグメンテーション
   |-- POST /api/merge   --> 合成パイプライン
   |     色調補正 -> スケール計算 -> 影生成 -> 合成 -> 出力
   |-- GET /api/health   --> ヘルスチェック
@@ -504,7 +512,7 @@ FastAPI Server (uvicorn :8000)
   |-- Segmentation Store (LRU 10件キャッシュ)
   |-- Merge Pipeline (Pillow + OpenCV)" data-en="Browser (React 18 + TypeScript)
   |
-  |-- POST /api/segment --> rembg (U2Net) Segmentation
+  |-- POST /api/segment --> rembg (BiRefNet) Segmentation
   |-- POST /api/merge   --> Merge Pipeline
   |     Color Correction -> Scale Calc -> Shadow Gen -> Compose -> Output
   |-- GET /api/health   --> Health Check

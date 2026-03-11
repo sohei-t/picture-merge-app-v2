@@ -55,7 +55,20 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let body: ApiError;
     try {
-      body = (await response.json()) as ApiError;
+      const raw = await response.json();
+      // Handle Pydantic 422 validation errors (detail is an array of objects)
+      if (response.status === 422 && Array.isArray(raw.detail)) {
+        const msgs = raw.detail.map((d: { loc?: string[]; msg?: string }) =>
+          `${(d.loc ?? []).join(".")}: ${d.msg ?? "validation error"}`
+        );
+        body = {
+          error: "validation_error",
+          message: "入力パラメータが不正です。",
+          detail: msgs.join("; "),
+        };
+      } else {
+        body = raw as ApiError;
+      }
     } catch {
       body = {
         error: "internal_error",

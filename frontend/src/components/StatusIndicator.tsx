@@ -44,7 +44,9 @@ export function StatusIndicator({ phase, error, processingTimeMs }: StatusIndica
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
           <p className="text-red-700 font-medium">{error.message}</p>
           {error.detail && (
-            <p className="text-red-500 text-xs mt-1">{error.detail}</p>
+            <p className="text-red-500 text-xs mt-1">
+              {typeof error.detail === "string" ? error.detail : JSON.stringify(error.detail)}
+            </p>
           )}
           {error.retryable && (
             <p className="text-red-400 text-xs mt-1">再試行できます。</p>

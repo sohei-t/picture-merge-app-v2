@@ -1,8 +1,0 @@
-# public/ 配下の除外ファイル
-# 開発ツール・テスト・認証情報は自動除外されます
-tests/
-*agent*.py
-generate_audio*.js
-credentials/
-*.key.json
-.env

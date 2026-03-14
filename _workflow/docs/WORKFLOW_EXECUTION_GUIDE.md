@@ -75,7 +75,7 @@ graph TD
 ### documenter_agent.py の実行（最重要）
 ```bash
 # これを忘れると about.html が生成されない！
-python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py
+python3 ./_workflow/src/documenter_agent.py
 ```
 
 ### ⚠️ Phase 5完了後の自動処理（v7.0）
@@ -107,7 +107,7 @@ Phase 6: simplified_github_publisher.py実行
 # project/public/ を ai-agent-portfolio/<app-name>/ に直接公開
 # （プロンプトや.env/credentials/.gitignore等の機密・一時ファイルは自動除外）
 # （Webアプリ/ゲームはビルド済み index.html + assets/ + dist/ を含めるが、node_modules/testコードは除外）
-python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.py .
+python3 ./_workflow/src/simplified_github_publisher.py .
 
 # 結果: https://github.com/sohei-t/ai-agent-portfolio/tree/main/{app-name}/ に配置
 # 既存の同名フォルダがある場合はフォルダ名を変えず、中身のみ更新

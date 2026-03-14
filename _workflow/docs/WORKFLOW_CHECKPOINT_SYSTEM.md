@@ -112,7 +112,7 @@ checkpoint_5:
       2. "GCP Text-to-Speech（GCP認証ファイル存在時）"
       3. "スキップ（両方失敗時、理由をREADME.mdに記録）"
   special_commands:
-    - "python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py"
+    - "python3 ./_workflow/src/documenter_agent.py"
     - "chmod +x launch_app.command"
 ```
 
@@ -169,7 +169,7 @@ def verify_completion(required_files):
 2. about.html を生成（必須）
    - documenter_agent.py を実行:
    ```bash
-   python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py
+   python3 ./_workflow/src/documenter_agent.py
    ```
 
 3. 音声スクリプト作成（必須）
@@ -215,7 +215,7 @@ def verify_completion(required_files):
 ```bash
 # 1. Pythonスクリプトで自動生成（音声も自動生成）
 cd worktrees/mission-*/
-python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py
+python3 ./_workflow/src/documenter_agent.py
 
 # 2. 生成物の確認
 echo "📄 生成されたドキュメント:"

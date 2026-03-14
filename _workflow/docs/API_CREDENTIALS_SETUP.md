@@ -68,7 +68,7 @@ brew install ffmpeg  # pydubが使用
 
 ```bash
 # 1. git-worktree-agent に移動
-cd ~/Desktop/git-worktree-agent
+cd .
 
 # 2. credentials フォルダを作成（画像生成用GCP認証を使う場合）
 mkdir -p credentials
@@ -93,7 +93,7 @@ gh auth login
 
 ```bash
 # 専用環境で実行
-python3 ~/Desktop/git-worktree-agent/_workflow/src/credential_checker.py .
+python3 ./_workflow/src/credential_checker.py .
 ```
 
 出力例：
@@ -104,11 +104,11 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/credential_checker.py .
 ✅ GCP (Text-to-Speech & Imagen)
    状態: ok
    ✓ プロジェクト: my-project-12345
-   パス: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+   パス: $GOOGLE_APPLICATION_CREDENTIALS
 
 ✅ GitHub
    状態: ok
-   ✓ ユーザー: sohei-t
+   ✓ ユーザー: your-username
    パス: gh CLI
 
 ============================================================
@@ -256,7 +256,7 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
 ```bash
 # キーを作成してダウンロード
 gcloud iam service-accounts keys create \
-  ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json \
+  $GOOGLE_APPLICATION_CREDENTIALS \
   --iam-account=ai-agent-service@YOUR_PROJECT_ID.iam.gserviceaccount.com
 ```
 
@@ -264,13 +264,13 @@ gcloud iam service-accounts keys create \
 1. サービスアカウントを選択
 2. **鍵 > 鍵を追加 > 新しい鍵を作成**
 3. 形式: **JSON**
-4. ダウンロードされたファイルを `~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json` に配置
+4. ダウンロードされたファイルを `$GOOGLE_APPLICATION_CREDENTIALS` に配置
 
 #### ステップ5: 動作確認
 
 ```bash
 # 環境変数を設定
-export GOOGLE_APPLICATION_CREDENTIALS=~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS
 
 # Text-to-Speech APIをテスト
 python3 << 'EOF'
@@ -348,13 +348,13 @@ gh auth status
 **解決策**:
 ```bash
 # 1. 認証ファイルの存在確認
-ls ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+ls $GOOGLE_APPLICATION_CREDENTIALS
 
 # 2. .env ファイルを確認
 cat .env | grep GOOGLE_APPLICATION_CREDENTIALS
 
 # 3. 手動で設定
-export GOOGLE_APPLICATION_CREDENTIALS=~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS
 ```
 
 #### エラー: `Permission denied` (403)
@@ -433,13 +433,13 @@ gh auth refresh
 
 ```bash
 # プロジェクトごとに認証ファイルを作成
-~/Desktop/git-worktree-agent/_workflow/credentials/
+./_workflow/credentials/
 ├── gcp-workflow-key.json              # デフォルト
 ├── project-a-key.json            # プロジェクトA用
 └── project-b-key.json            # プロジェクトB用
 
 # .env でプロジェクトを切り替え
-GOOGLE_APPLICATION_CREDENTIALS=~/Desktop/git-worktree-agent/_workflow/credentials/project-a-key.json
+GOOGLE_APPLICATION_CREDENTIALS=./_workflow/credentials/project-a-key.json
 GCP_PROJECT_ID=project-a-12345
 ```
 
@@ -473,7 +473,7 @@ cp .env.production .env   # 本番時
 - [ ] GCP プロジェクト作成
 - [ ] Vertex AI API 有効化
 - [ ] サービスアカウント作成
-- [ ] 認証キー配置: `~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json`
+- [ ] 認証キー配置: `$GOOGLE_APPLICATION_CREDENTIALS`
 
 **GitHub公開:**
 - [ ] GitHub CLI 認証完了

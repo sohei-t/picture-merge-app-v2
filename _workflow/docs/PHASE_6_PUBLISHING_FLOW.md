@@ -18,7 +18,7 @@ GitHub Pages: https://sohei-t.github.io/ai-agent-portfolio/todo-app/
 ```
 - **用途**: 全作品を1箇所で管理・公開
 - **メリット**: ポートフォリオ全体を見せやすい
-- **実行**: `python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.py .`
+- **実行**: `python3 ./_workflow/src/simplified_github_publisher.py .`
 - **v9.0**: deploy.yml が gh-pages を自動更新、release.yml がタグからzip自動生成
 
 ### 方式2: 個別リポジトリ（github_portfolio_publisher.py）
@@ -29,7 +29,7 @@ GitHub: portfolio-todo-app （個別リポジトリ）
 ```
 - **用途**: 各アプリを独立したリポジトリとして公開
 - **メリット**: 詳細なREADME、Issues、GitHub Pagesが使える
-- **実行**: `python3 ~/Desktop/git-worktree-agent/_workflow/src/github_portfolio_publisher.py`
+- **実行**: `python3 ./_workflow/src/github_portfolio_publisher.py`
 
 ## 📋 Phase 6 実行の判断フロー
 
@@ -138,7 +138,7 @@ cat PROJECT_INFO.yaml | grep development_type
 ### Step 3A: 統合ポートフォリオへ公開
 ```bash
 # ai-agent-portfolio リポジトリが存在する場合（公開に不要/機密なファイルは自動除外）
-python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.py .
+python3 ./_workflow/src/simplified_github_publisher.py .
 
 # 結果: ai-agent-portfolio/todo-app/ に配置（日付なし・同名フォルダは中身だけ更新）
 # v9.0: deploy.yml が自動で gh-pages 同期、release.yml がタグから zip 生成
@@ -196,7 +196,7 @@ GitHub Actions がデプロイとリリースを自動実行:
 ### Step 3B: 個別リポジトリとして公開
 ```bash
 # 新規GitHubリポジトリを作成
-python3 ~/Desktop/git-worktree-agent/_workflow/src/github_portfolio_publisher.py .
+python3 ./_workflow/src/github_portfolio_publisher.py .
 
 # 結果: portfolio-todo-app リポジトリ作成
 ```
@@ -269,13 +269,13 @@ https://github.com/sohei-t/ai-agent-portfolio/releases
 
 A. 統合ポートフォリオ（複数アプリ管理）- 推奨
    ```bash
-   python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.py .
+   python3 ./_workflow/src/simplified_github_publisher.py .
    ```
    結果: ai-agent-portfolio/{app-name}/ に配置
 
 B. 個別リポジトリ（このアプリ専用）
    ```bash
-   python3 ~/Desktop/git-worktree-agent/_workflow/src/github_portfolio_publisher.py .
+   python3 ./_workflow/src/github_portfolio_publisher.py .
    ```
    結果: portfolio-{app-name} リポジトリ作成
 

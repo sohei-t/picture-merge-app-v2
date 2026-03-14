@@ -926,22 +926,26 @@ class DocumenterAgent:
         """階層型設定システムに基づいてGCP認証パスを解決
 
         優先順位:
-        1. ローカル設定（プロジェクト固有）: ./ai-agents-config/credentials/gcp.json
-        2. 専用環境の認証: ./credentials/gcp-workflow-key.json
-        3. 親ディレクトリの認証: ../credentials/gcp-workflow-key.json
-        4. グローバル設定: ~/.config/ai-agents/credentials/gcp/default.json
-        5. テンプレート環境: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+        1. 環境変数 GOOGLE_APPLICATION_CREDENTIALS
+        2. ローカル設定（プロジェクト固有）: ./ai-agents-config/credentials/gcp.json
+        3. 専用環境の認証: ./credentials/gcp-workflow-key.json
+        4. 親ディレクトリの認証: ../credentials/gcp-workflow-key.json
+        5. グローバル設定: ~/.config/ai-agents/credentials/gcp/default.json
 
         Returns:
             Path or None: 認証ファイルのパス、見つからない場合はNone
         """
+        # 環境変数が設定されている場合はそれを優先
+        env_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if env_creds and Path(env_creds).exists():
+            return Path(env_creds)
+
         # 候補パスを優先順位順に定義
         candidate_paths = [
             self.project_path / "ai-agents-config" / "credentials" / "gcp.json",  # ローカル設定
             self.project_path / "credentials" / "gcp-workflow-key.json",  # 専用環境ルート
             self.project_path.parent / "credentials" / "gcp-workflow-key.json",  # 親ディレクトリ（worktree内から実行時）
             Path.home() / ".config" / "ai-agents" / "credentials" / "gcp" / "default.json",  # グローバル設定
-            Path.home() / "Desktop" / "git-worktree-agent" / "_workflow" / "credentials" / "gcp-workflow-key.json",  # テンプレート環境
         ]
 
         for path in candidate_paths:
@@ -1021,7 +1025,7 @@ class DocumenterAgent:
             elif (Path.home() / ".config" / "ai-agents" / "credentials" / "gcp").exists():
                 cred_path = Path.home() / ".config" / "ai-agents" / "credentials" / "gcp" / "default.json"
             else:
-                cred_path = Path.home() / "Desktop" / "git-worktree-agent" / "credentials" / "gcp-workflow-key.json"
+                cred_path = Path(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", str(Path.home() / ".config" / "ai-agents" / "credentials" / "gcp" / "default.json")))
 
             cred_path.parent.mkdir(parents=True, exist_ok=True)
 

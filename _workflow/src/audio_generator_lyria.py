@@ -9,7 +9,7 @@ Google Cloud Vertex AI の Lyria モデルを使用して、
     python3 audio_generator_lyria.py AUDIO_PROMPTS.json
 
 必要な環境:
-    - GCP認証: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+    - GCP認証: $GOOGLE_APPLICATION_CREDENTIALS または ~/.config/ai-agents/credentials/gcp/default.json
     - AUDIO_PROMPTS.json: 音声生成プロンプト定義
 """
 
@@ -360,8 +360,9 @@ def main():
     prompts_file = sys.argv[1]
 
     # GCP認証ファイル確認
-    credentials_path = os.path.expanduser(
-        "~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json"
+    credentials_path = os.environ.get(
+        'GOOGLE_APPLICATION_CREDENTIALS',
+        os.path.expanduser("~/.config/ai-agents/credentials/gcp/default.json")
     )
 
     if not os.path.exists(credentials_path):
@@ -369,7 +370,7 @@ def main():
         print("\n以下の手順でGCP認証を設定してください:")
         print("1. Google Cloud ConsoleでVertex AI APIを有効化")
         print("2. サービスアカウントキーを作成")
-        print("3. ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json に配置")
+        print("3. 環境変数 GOOGLE_APPLICATION_CREDENTIALS にパスを設定")
         sys.exit(1)
 
     if not os.path.exists(prompts_file):

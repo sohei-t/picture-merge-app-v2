@@ -45,7 +45,7 @@ class SmartTTSGenerator:
             self._load_env_file()
             self.credentials_path = os.environ.get(
                 'GOOGLE_APPLICATION_CREDENTIALS',
-                os.path.expanduser("~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json")
+                os.path.expanduser("~/.config/ai-agents/credentials/gcp/default.json")
             )
 
         self.client = None

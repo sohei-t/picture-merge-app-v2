@@ -13,7 +13,7 @@ portfolio:
   demo_url: "https://github.com/[username]/ai-agent-portfolio/picture-merge-app-v2"
 
 paths:
-  agent_dir: /Users/sohei/Desktop/AI-Apps/picture-merge-app-v2-agent
+  agent_dir: .  # プロジェクトルートからの相対パス
   release_dir: ~/Desktop/my-apps/picture-merge-app-v2
   portfolio_dir: ~/Desktop/GitHub/ai-agent-portfolio/picture-merge-app-v2
 

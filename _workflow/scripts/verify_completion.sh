@@ -152,19 +152,19 @@ else
 
     if [ ! -f "about.html" ] || [ ! -f "audio_script.txt" ] || [ ! -f "generate_audio_gcp.js" ]; then
         echo -e "1. Documenterエージェントを実行:"
-        echo -e "   ${YELLOW}python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py${NC}"
+        echo -e "   ${YELLOW}python3 ./_workflow/src/documenter_agent.py${NC}"
     fi
 
     if [ ! -f "explanation.mp3" ] && [ -f "generate_audio_gcp.js" ]; then
         echo -e "\n2. 音声を生成:"
-        echo -e "   ${YELLOW}export GOOGLE_APPLICATION_CREDENTIALS=\"\$HOME/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json\"${NC}"
+        echo -e "   ${YELLOW}export GOOGLE_APPLICATION_CREDENTIALS=\"\$GOOGLE_APPLICATION_CREDENTIALS\"${NC}"
         echo -e "   ${YELLOW}npm install @google-cloud/text-to-speech${NC}"
         echo -e "   ${YELLOW}node generate_audio_gcp.js${NC}"
     fi
 
     if [ ! -f "launch_app.command" ]; then
         echo -e "\n3. 起動スクリプトを生成:"
-        echo -e "   ${YELLOW}python3 ~/Desktop/git-worktree-agent/_workflow/src/launcher_generator.py${NC}"
+        echo -e "   ${YELLOW}python3 ./_workflow/src/launcher_generator.py${NC}"
     fi
 fi
 

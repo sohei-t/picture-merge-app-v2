@@ -161,7 +161,7 @@ SVG代替:
 2. 必要な場合:
    ⚠️ use the gcp skill を明示的に宣言
    - Vertex AI Imagen API セットアップスクリプト実行
-     (~/Desktop/git-worktree-agent/.claude/skills/gcp-skill/IMAGEN_API.md 参照)
+     (./.claude/skills/gcp-skill/IMAGEN_API.md 参照)
    - 画像生成プロンプトを英語で作成
    - generate_image() 実行
    - 失敗時: SVG代替を自動生成
@@ -208,7 +208,7 @@ TTS + Imagen を1つのサービスアカウントで管理：
 #   - roles/cloudtts.admin (Text-to-Speech)
 #   - roles/aiplatform.user (Vertex AI Imagen)
 
-# 認証ファイル: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+# 認証ファイル: $GOOGLE_APPLICATION_CREDENTIALS
 # ※ 名前は"tts"だが、実際はTTS+Imagen両方に使用
 ```
 
@@ -373,7 +373,7 @@ gcloud billing budgets list
 
 ```bash
 # 確認
-ls -la ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+ls -la $GOOGLE_APPLICATION_CREDENTIALS
 
 # 再生成（TTS用）
 # → CLAUDE.md 音声生成用プロンプト参照

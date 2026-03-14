@@ -64,7 +64,7 @@ worktrees/
 **評価・選択:**
 ```bash
 # 自律評価システムで最良を選択
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
+python3 ./_workflow/src/autonomous_evaluator.py . \
   phase1-planning-a phase1-planning-b
 
 # 結果: EVALUATION_REPORT.json に記録
@@ -141,7 +141,7 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
 **評価・選択（UX最優先）:**
 ```bash
 # 3つのプロトタイプをUX重視で自律評価
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator_ux.py . \
+python3 ./_workflow/src/autonomous_evaluator_ux.py . \
   phase2-impl-prototype-a phase2-impl-prototype-b phase2-impl-prototype-c
 
 # 評価軸（UX最優先）:
@@ -226,7 +226,7 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator_ux.py . 
 **評価・選択:**
 ```bash
 # 2つの最適化案を評価
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
+python3 ./_workflow/src/autonomous_evaluator.py . \
   phase4-quality-opt-a phase4-quality-opt-b
 
 # 最良の最適化を main にマージ
@@ -248,7 +248,7 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
       必須タスク（3つを1メッセージで並列実行）:
 
       Task 1: Documenter
-      - python3 ~/Desktop/git-worktree-agent/_workflow/src/documenter_agent.py
+      - python3 ./_workflow/src/documenter_agent.py
       - README.md生成
       - about.html生成（frontend-design skill使用）
       - audio_script.txt生成
@@ -277,7 +277,7 @@ git merge phase/delivery
 
 ```bash
 # Phase 5完了直後に自動実行
-python3 ~/Desktop/git-worktree-agent/_workflow/src/delivery_organizer.py
+python3 ./_workflow/src/delivery_organizer.py
 
 # 確認:
 # - DELIVERY/<app-name>/ が標準構造で生成
@@ -290,7 +290,7 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/delivery_organizer.py
 
 ```bash
 # Phase 5.5完了直後に自動実行（Portfolio Appの場合のみ）
-python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.py .
+python3 ./_workflow/src/simplified_github_publisher.py .
 
 # 結果:
 # - ai-agent-portfolio/<app-name>/ に公開
@@ -354,14 +354,14 @@ python3 ~/Desktop/git-worktree-agent/_workflow/src/simplified_github_publisher.p
 
 ```bash
 # 基本的な使用方法
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py <project-path> <worktree1> <worktree2> ...
+python3 ./_workflow/src/autonomous_evaluator.py <project-path> <worktree1> <worktree2> ...
 
 # 例: Phase 1の2案を評価
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
+python3 ./_workflow/src/autonomous_evaluator.py . \
   phase1-planning-a phase1-planning-b
 
 # 例: Phase 2の3プロトタイプを評価
-python3 ~/Desktop/git-worktree-agent/_workflow/src/autonomous_evaluator.py . \
+python3 ./_workflow/src/autonomous_evaluator.py . \
   phase2-impl-prototype-a phase2-impl-prototype-b phase2-impl-prototype-c
 ```
 

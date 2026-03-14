@@ -337,7 +337,7 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
 
 # 4. キー生成
 gcloud iam service-accounts keys create \
-  ~/Desktop/git-worktree-agent/_workflow/credentials/imagen-key.json \
+  ./_workflow/credentials/imagen-key.json \
   --iam-account=game-asset-generator@PROJECT_ID.iam.gserviceaccount.com
 ```
 
@@ -346,7 +346,7 @@ gcloud iam service-accounts keys create \
 ```javascript
 // .env
 GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_APPLICATION_CREDENTIALS=~/Desktop/git-worktree-agent/_workflow/credentials/imagen-key.json
+GOOGLE_APPLICATION_CREDENTIALS=./_workflow/credentials/imagen-key.json
 IMAGEN_API_ENDPOINT=https://us-central1-aiplatform.googleapis.com
 ```
 

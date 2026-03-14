@@ -39,7 +39,7 @@ class CredentialChecker:
             project_path: プロジェクトのパス（デフォルト: カレントディレクトリ）
         """
         self.project_path = Path(project_path or os.getcwd())
-        self.template_path = Path.home() / "Desktop" / "git-worktree-agent" / "_workflow"
+        self.template_path = Path(os.environ.get("WORKFLOW_TEMPLATE_PATH", str(self.project_path / "_workflow")))
 
         # .env ファイルを読み込み
         self._load_env()

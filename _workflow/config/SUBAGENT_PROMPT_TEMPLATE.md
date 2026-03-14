@@ -524,7 +524,7 @@
    実行手順（CLAUDE.md Phase 2の画像生成フロー参照）:
    1. IMAGE_PROMPTS.json の存在確認（Phase 1-6で生成済み）
    2. GCP認証の自動セットアップ（CLAUDE.md参照）
-      - 認証ファイル確認: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+      - 認証ファイル確認: ./_workflow/credentials/gcp-workflow-key.json
       - 不在時: gcp-skill宣言 → 自動セットアップ実行
       - 既存時: Vertex AI権限追加確認
    3. IMAGE_PROMPTS.jsonを読み込み、優先度順（CRITICAL → HIGH → MEDIUM → LOW）で画像生成
@@ -604,7 +604,7 @@
 
    実行手順:
    1. GYRO_CONTROLS_STANDARD.md を読み込む
-      パス: ~/Desktop/git-worktree-agent/_workflow/docs/GYRO_CONTROLS_STANDARD.md
+      パス: ./_workflow/docs/GYRO_CONTROLS_STANDARD.md
 
    2. GyroControls.js を作成
       - GYRO_CONTROLS_STANDARD.md v2.0 の実装コードをそのまま使用
@@ -923,7 +923,7 @@ B. 品質改善（フェーズ4）：
      1. documenter_agent.py を実行（audio_script.txt と explanation.mp3 を自動生成）
      2. 認証設定:
         - Gemini TTS: GEMINI_API_KEY 環境変数
-        - GCP TTS: ~/Desktop/git-worktree-agent/_workflow/credentials/gcp-workflow-key.json
+        - GCP TTS: ./_workflow/credentials/gcp-workflow-key.json
      3. 依存関係: pip install google-genai pydub（Gemini TTS用）
 
 【品質基準】
@@ -1008,14 +1008,14 @@ B. 品質改善（フェーズ4）：
 
 Option A: 統合ポートフォリオ（複数アプリ管理）
 ```bash
-python3 ~/Desktop/git-worktree-agent/_workflow/src/portfolio_publisher.py \
+python3 ./_workflow/src/portfolio_publisher.py \
   --source . --portfolio ~/Desktop/GitHub/ai-agent-portfolio
 ```
 結果: apps/{slug}/ に配置（日付なし）
 
 Option B: 個別リポジトリ（アプリ専用）
 ```bash
-python3 ~/Desktop/git-worktree-agent/_workflow/src/github_portfolio_publisher.py .
+python3 ./_workflow/src/github_portfolio_publisher.py .
 ```
 結果: portfolio-{slug} リポジトリ作成
 

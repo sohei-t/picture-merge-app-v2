@@ -34,7 +34,7 @@ class GitHubPublisher:
 
     def __init__(self, config: PortfolioConfig = None):
         self.config = config or get_config()
-        self.repo_local_path = Path.home() / "Desktop" / "GitHub" / self.config.github_repo
+        self.repo_local_path = Path(os.environ.get("GITHUB_REPO_LOCAL_PATH", str(Path.home() / "GitHub" / self.config.github_repo)))
 
     def ensure_repo_cloned(self) -> bool:
         """リポジトリがクローンされていることを確認"""
